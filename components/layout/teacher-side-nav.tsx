@@ -10,6 +10,7 @@ export function TeacherSideNav() {
       role="teacher"
       links={[
         { href: "/teacher/dashboard", labelKey: "nav_teacher_overview", labelFallback: "Overview", icon: "home" },
+        { href: "/teacher/materials", labelKey: "nav_teacher_materials", labelFallback: "Books & Materials", icon: "bookOpen" },
         { href: "/teacher/worksheets", labelKey: "nav_teacher_worksheets", labelFallback: "Assignments & Subjects", icon: "fileText" },
         { href: "/teacher/students", labelKey: "nav_teacher_students", labelFallback: "Student Performance", icon: "users" },
         { href: "/teacher/settings", labelKey: "nav_teacher_settings", labelFallback: "Settings", icon: "settings" },

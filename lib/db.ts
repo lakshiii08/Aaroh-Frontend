@@ -42,7 +42,55 @@ export type WorksheetItem = {
     concept: string;
     localExample: string;
   }>;
+  materialId?: string;
+  materialTitle?: string;
   createdAt: string;
+};
+
+export type GeneratedQuestion = {
+  id: string;
+  questionNumber: number;
+  question: string;
+  type?: "mcq" | "short_answer" | "descriptive";
+  options?: string[]; // for quiz
+  correctAnswer?: string;
+  explanation?: string;
+  writingSpaceLines?: number;
+  suggestedAnswer?: string;
+  marks: number;
+};
+
+export type GeneratedAssessment = {
+  id: string;
+  title: string;
+  instructions: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  questions: GeneratedQuestion[];
+  totalMarks: number;
+  estimatedTimeMinutes?: number;
+};
+
+export type LearningMaterialItem = {
+  id: string;
+  title: string;
+  subjectId: string;
+  subjectName: string;
+  grade: string; // e.g. "Grade 4"
+  chapterTopic: string;
+  fileName: string;
+  fileSize?: string;
+  fileData?: string;
+  uploadedAt: string;
+  status: "uploaded" | "processing" | "ready" | "failed";
+  aiProcessedAt?: string;
+  aiSummary?: string;
+  generatedContent?: {
+    quiz: GeneratedAssessment;
+    worksheet: GeneratedAssessment;
+  };
+  approvalStatus: "pending_review" | "approved" | "assigned";
+  approvedAt?: string;
+  assignedWorksheetId?: string;
 };
 
 export type SubmissionItem = {
@@ -359,6 +407,7 @@ const DB_FILE = path.join(process.cwd(), "data_store.json");
 interface DBData {
   subjects: SubjectItem[];
   worksheets: WorksheetItem[];
+  materials: LearningMaterialItem[];
   submissions: SubmissionItem[];
   notifications: NotificationItem[];
   userProfile: UserProfile;
@@ -443,6 +492,270 @@ const DEFAULT_DATA: DBData = {
           localExample: "Local example: Paddy seeds sown before rain.",
         },
       ],
+    },
+  ],
+  materials: [
+    {
+      id: "mat-101",
+      title: "SCERT Jharkhand Science: Chapter 4 - Plants Around Us",
+      subjectId: "sub-2",
+      subjectName: "Science",
+      grade: "Grade 4",
+      chapterTopic: "Chapter 4: Plant Roots, Leaves & Forest Trees",
+      fileName: "Ch4_Science_Plants_Around_Us.pdf",
+      fileSize: "2.4 MB",
+      uploadedAt: "2026-09-24T10:00:00Z",
+      status: "ready",
+      aiProcessedAt: "2026-09-24T10:02:15Z",
+      aiSummary: "AI successfully analyzed Ch4_Science_Plants_Around_Us.pdf. Extracted 5 quiz questions and 5 descriptive worksheet problems on root systems, photosynthesis, and Jharkhand trees.",
+      approvalStatus: "approved",
+      approvedAt: "2026-09-24T10:15:00Z",
+      assignedWorksheetId: "ws-102",
+      generatedContent: {
+        quiz: {
+          id: "quiz-mat-101",
+          title: "Plants Around Us — Concept Quiz",
+          instructions: "Read each question carefully and select the correct option. Total marks: 10.",
+          difficulty: "Medium",
+          totalMarks: 10,
+          estimatedTimeMinutes: 15,
+          questions: [
+            {
+              id: "q-1",
+              questionNumber: 1,
+              question: "Which part of a tree anchors it into the soil and absorbs groundwater?",
+              type: "mcq",
+              options: ["Roots (ᱨᱮᱦᱮᱫ)", "Leaves (ᱥᱟᱠᱟᱢ)", "Flower (ᱵᱟᱦᱟ)", "Bark (ᱪᱷᱟᱞ)"],
+              correctAnswer: "Roots (ᱨᱮᱦᱮᱫ)",
+              explanation: "Roots anchor the plant firmly and absorb vital groundwater and minerals from the soil.",
+              marks: 2,
+            },
+            {
+              id: "q-2",
+              questionNumber: 2,
+              question: "What green substance inside leaves captures solar energy to prepare plant food?",
+              type: "mcq",
+              options: ["Chlorophyll (ᱦᱟᱹᱨᱤᱭᱟᱹᱲ ᱨᱚᱝ)", "Carotene", "Pure water", "Nitrogen dust"],
+              correctAnswer: "Chlorophyll (ᱦᱟᱹᱨᱤᱭᱟᱹᱲ ᱨᱚᱝ)",
+              explanation: "Chlorophyll absorbs sunlight to synthesize glucose from carbon dioxide and water.",
+              marks: 2,
+            },
+            {
+              id: "q-3",
+              questionNumber: 3,
+              question: "Which vital gas do green forest trees release during daylight that humans breathe?",
+              type: "mcq",
+              options: ["Oxygen (ᱡᱤᱣᱤ ᱦᱚᱭ)", "Carbon Dioxide", "Argon", "Smoke"],
+              correctAnswer: "Oxygen (ᱡᱤᱣᱤ ᱦᱚᱭ)",
+              explanation: "Plants produce oxygen as a byproduct of daylight photosynthesis.",
+              marks: 2,
+            },
+            {
+              id: "q-4",
+              questionNumber: 4,
+              question: "What protective coat wraps around a seed before it germinates in moist soil?",
+              type: "mcq",
+              options: ["Seed Coat (ᱡᱟᱶ ᱪᱷᱟᱞ)", "Leaf vein", "Stem bark", "Flower petal"],
+              correctAnswer: "Seed Coat (ᱡᱟᱶ ᱪᱷᱟᱞ)",
+              explanation: "The seed coat shields the dormant embryo until moisture and warmth induce sprouting.",
+              marks: 2,
+            },
+            {
+              id: "q-5",
+              questionNumber: 5,
+              question: "Why do Sal trees in Jharkhand shed leaves during late winter and dry spring?",
+              type: "mcq",
+              options: [
+                "To reduce water loss through transpiration",
+                "Because of heavy rainfall",
+                "To attract butterflies",
+                "Due to excessive shade",
+              ],
+              correctAnswer: "To reduce water loss through transpiration",
+              explanation: "Deciduous shedding conserves vital moisture in dry weather prior to summer rains.",
+              marks: 2,
+            },
+          ],
+        },
+        worksheet: {
+          id: "ws-mat-101",
+          title: "Plants Around Us — Classroom Practice Worksheet",
+          instructions: "Answer each question neatly in the lines provided below. Total marks: 20.",
+          difficulty: "Medium",
+          totalMarks: 20,
+          estimatedTimeMinutes: 30,
+          questions: [
+            {
+              id: "wsq-1",
+              questionNumber: 1,
+              question: "Explain why indigenous trees like Sal and Mahua need deep taproots in our district.",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "Deep taproots penetrate deep underground to reach water tables during dry hot months.",
+              marks: 4,
+            },
+            {
+              id: "wsq-2",
+              questionNumber: 2,
+              question: "List the three essential raw materials that green leaves use to produce food through photosynthesis.",
+              type: "descriptive",
+              writingSpaceLines: 3,
+              suggestedAnswer: "1. Sunlight (ᱵᱮᱲᱟ ᱢᱟᱨᱥᱟᱞ), 2. Water from soil (ᱫᱟᱜ), 3. Carbon Dioxide from air (ᱦᱚᱭ).",
+              marks: 4,
+            },
+            {
+              id: "wsq-3",
+              questionNumber: 3,
+              question: "How do village forests help keep the ambient air cool and reduce seasonal soil erosion?",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "Tree root networks bind loose topsoil against runoff, and leafy canopy provides transpiration cooling.",
+              marks: 4,
+            },
+            {
+              id: "wsq-4",
+              questionNumber: 4,
+              question: "Describe the changes observed when a farmer sows paddy seeds into freshly plowed soil.",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "The seed absorbs soil moisture, swells, splits its testa, and sprouts a downward radicle root and upward green shoot.",
+              marks: 4,
+            },
+            {
+              id: "wsq-5",
+              questionNumber: 5,
+              question: "Give two reasons why planting and protecting fruit and shade trees near our school is beneficial.",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "Trees offer shade during recess, improve air quality, and provide seasonal nutritious fruits like Jamun and Mango.",
+              marks: 4,
+            },
+          ],
+        },
+      },
+    },
+    {
+      id: "mat-102",
+      title: "Fractions & Fair Sharing - Chapter 2 Notes",
+      subjectId: "sub-1",
+      subjectName: "Mathematics",
+      grade: "Grade 4",
+      chapterTopic: "Chapter 2: Fractions & Sharing Produce",
+      fileName: "Math_Ch2_Fractions_Notes.pdf",
+      fileSize: "1.8 MB",
+      uploadedAt: "2026-09-26T11:30:00Z",
+      status: "ready",
+      aiProcessedAt: "2026-09-26T11:31:40Z",
+      aiSummary: "AI successfully analyzed Math_Ch2_Fractions_Notes.pdf. Extracted 5 multiple-choice fraction comparison items and 4 word problems on equal division.",
+      approvalStatus: "pending_review",
+      generatedContent: {
+        quiz: {
+          id: "quiz-mat-102",
+          title: "Fractions & Equal Sharing — Quick Quiz",
+          instructions: "Select the correct option for each problem. Total marks: 10.",
+          difficulty: "Medium",
+          totalMarks: 10,
+          estimatedTimeMinutes: 15,
+          questions: [
+            {
+              id: "qm-1",
+              questionNumber: 1,
+              question: "If 12 guavas are shared equally among 3 friends, how many guavas does each friend get?",
+              type: "mcq",
+              options: ["4 guavas (᱔ ᱴᱤ)", "3 guavas", "6 guavas", "2 guavas"],
+              correctAnswer: "4 guavas (᱔ ᱴᱤ)",
+              explanation: "12 divided by 3 equals 4 (12 ÷ 3 = 4).",
+              marks: 2,
+            },
+            {
+              id: "qm-2",
+              questionNumber: 2,
+              question: "Which fraction represents one half of a whole unit?",
+              type: "mcq",
+              options: ["1/2", "1/4", "3/4", "2/1"],
+              correctAnswer: "1/2",
+              explanation: "1/2 indicates 1 equal part out of 2.",
+              marks: 2,
+            },
+            {
+              id: "qm-3",
+              questionNumber: 3,
+              question: "Which fraction is bigger: 1/2 or 1/4?",
+              type: "mcq",
+              options: ["1/2 is bigger", "1/4 is bigger", "Both are equal", "Cannot be determined"],
+              correctAnswer: "1/2 is bigger",
+              explanation: "Dividing into 2 parts creates larger pieces than dividing into 4 parts.",
+              marks: 2,
+            },
+            {
+              id: "qm-4",
+              questionNumber: 4,
+              question: "If a string of length 20 cm is cut into 4 equal segments, what is the length of each segment?",
+              type: "mcq",
+              options: ["5 cm", "4 cm", "10 cm", "2 cm"],
+              correctAnswer: "5 cm",
+              explanation: "20 cm ÷ 4 = 5 cm.",
+              marks: 2,
+            },
+            {
+              id: "qm-5",
+              questionNumber: 5,
+              question: "What is 3/4 + 1/4 equal to?",
+              type: "mcq",
+              options: ["1 (One whole)", "4/8", "2/4", "3/8"],
+              correctAnswer: "1 (One whole)",
+              explanation: "(3 + 1) / 4 = 4/4 = 1.",
+              marks: 2,
+            },
+          ],
+        },
+        worksheet: {
+          id: "ws-mat-102",
+          title: "Fractions & Equal Sharing — Practice Sheet",
+          instructions: "Solve the word problems clearly showing calculations. Total marks: 16.",
+          difficulty: "Medium",
+          totalMarks: 16,
+          estimatedTimeMinutes: 25,
+          questions: [
+            {
+              id: "wsm-1",
+              questionNumber: 1,
+              question: "Solve: 24 kilograms of rice are shared equally among 4 families. How much does each family receive?",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "24 kg ÷ 4 = 6 kg per family.",
+              marks: 4,
+            },
+            {
+              id: "wsm-2",
+              questionNumber: 2,
+              question: "Draw two identical circular rotis. Shade 1/2 of the first and 1/4 of the second to demonstrate which is larger.",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "Shading half of a circle covers twice the area of one quarter.",
+              marks: 4,
+            },
+            {
+              id: "wsm-3",
+              questionNumber: 3,
+              question: "A piece of cloth measures 15 meters. If Guruji cuts 3/5 of it for school banner craft, how many meters are cut?",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "(15 ÷ 5) × 3 = 3 × 3 = 9 meters cut.",
+              marks: 4,
+            },
+            {
+              id: "wsm-4",
+              questionNumber: 4,
+              question: "Sona had ₹60. She spent 1/3 of it on colored pencils. How much did she spend, and how much money is left?",
+              type: "descriptive",
+              writingSpaceLines: 4,
+              suggestedAnswer: "Spent = 60 ÷ 3 = ₹20. Remaining = 60 - 20 = ₹40.",
+              marks: 4,
+            },
+          ],
+        },
+      },
     },
   ],
   submissions: [
@@ -684,6 +997,9 @@ function readDB(): DBData {
       }
       if (!parsed.worksheets || parsed.worksheets.length === 0) {
         parsed.worksheets = DEFAULT_DATA.worksheets;
+      }
+      if (!parsed.materials || parsed.materials.length === 0) {
+        parsed.materials = DEFAULT_DATA.materials;
       }
       return parsed;
     }
@@ -1044,5 +1360,111 @@ export const db = {
       return true;
     }
     return false;
+  },
+  getMaterials: (subjectId?: string): LearningMaterialItem[] => {
+    const materials = readDB().materials || [];
+    if (subjectId && subjectId !== "all") {
+      return materials.filter((m) => m.subjectId === subjectId);
+    }
+    return materials;
+  },
+  getMaterialById: (id: string): LearningMaterialItem | undefined => {
+    return (readDB().materials || []).find((m) => m.id === id);
+  },
+  addMaterial: (
+    material: Omit<LearningMaterialItem, "id" | "uploadedAt" | "status" | "approvalStatus"> & {
+      status?: LearningMaterialItem["status"];
+      approvalStatus?: LearningMaterialItem["approvalStatus"];
+    }
+  ): LearningMaterialItem => {
+    const data = readDB();
+    if (!data.materials) data.materials = [];
+    const newMaterial: LearningMaterialItem = {
+      ...material,
+      id: `mat-${Date.now()}`,
+      uploadedAt: new Date().toISOString(),
+      status: material.status || "uploaded",
+      approvalStatus: material.approvalStatus || "pending_review",
+    };
+    data.materials.unshift(newMaterial);
+    writeDB(data);
+    return newMaterial;
+  },
+  updateMaterial: (
+    id: string,
+    updates: Partial<LearningMaterialItem>
+  ): LearningMaterialItem | undefined => {
+    const data = readDB();
+    const mat = (data.materials || []).find((m) => m.id === id);
+    if (!mat) return undefined;
+    Object.assign(mat, updates);
+    writeDB(data);
+    return mat;
+  },
+  deleteMaterial: (id: string): boolean => {
+    const data = readDB();
+    const initLen = (data.materials || []).length;
+    data.materials = (data.materials || []).filter((m) => m.id !== id);
+    if (data.materials.length !== initLen) {
+      writeDB(data);
+      return true;
+    }
+    return false;
+  },
+  approveAndAssignMaterial: (
+    materialId: string,
+    deadline: string
+  ): { material: LearningMaterialItem; worksheet: WorksheetItem } | undefined => {
+    const data = readDB();
+    const material = (data.materials || []).find((m) => m.id === materialId);
+    if (!material || !material.generatedContent) return undefined;
+
+    material.approvalStatus = "assigned";
+    material.approvedAt = new Date().toISOString();
+
+    const wsQuestions = material.generatedContent.worksheet.questions || [];
+    const items = wsQuestions.map((q, idx) => ({
+      id: `w-mat-${idx + 1}`,
+      original: q.question,
+      translated: q.suggestedAnswer || q.question,
+      translatedOlChiki: q.question,
+      concept: material.chapterTopic || "Core Concept",
+      localExample: `Extracted from ${material.title} (${material.grade})`,
+    }));
+
+    const newWorksheet: WorksheetItem = {
+      id: `ws-${Date.now()}`,
+      title: `${material.title} (Worksheet)`,
+      subjectId: material.subjectId,
+      subjectName: material.subjectName,
+      originalLanguage: "English / Hindi",
+      fileName: material.fileName,
+      pdfUrl: "",
+      deadline: deadline || "2026-10-30T17:00:00Z",
+      status: "active",
+      materialId: material.id,
+      materialTitle: material.title,
+      items,
+      createdAt: new Date().toISOString(),
+    };
+
+    data.worksheets.unshift(newWorksheet);
+    material.assignedWorksheetId = newWorksheet.id;
+
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      studentId: "s1",
+      title: "New study worksheet assigned!",
+      message: `${material.subjectName} (${material.grade}) — ${material.title}`,
+      subjectName: material.subjectName,
+      worksheetId: newWorksheet.id,
+      deadline: newWorksheet.deadline,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    data.notifications.unshift(newNotif);
+
+    writeDB(data);
+    return { material, worksheet: newWorksheet };
   },
 };

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sprout, LogOut, Home, Layers, Mic, FileText, BarChart3, Bell, Settings, Globe, ClipboardCheck, CheckSquare, Users, Folder } from "lucide-react";
+import { Sprout, LogOut, Home, Layers, Mic, FileText, BarChart3, Bell, Settings, Globe, ClipboardCheck, CheckSquare, Users, Folder, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/providers/language-provider";
 
@@ -20,6 +20,7 @@ const icons = {
   checkSquare: CheckSquare,
   users: Users,
   folder: Folder,
+  bookOpen: BookOpen,
 } as const;
 
 export type SideNavIconName = keyof typeof icons;

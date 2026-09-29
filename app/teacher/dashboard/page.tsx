@@ -14,6 +14,7 @@ import {
   RefreshCw,
   FolderPlus,
   Download,
+  BookOpen,
 } from "lucide-react";
 import { TeacherSideNav } from "@/components/layout/teacher-side-nav";
 import { Badge } from "@/components/ui/badge";
@@ -144,12 +145,18 @@ export default function TeacherDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <Link href="/teacher/materials">
+              <Button variant="outline" size="sm" className="text-xs">
+                <BookOpen className="w-3.5 h-3.5 mr-1 text-emerald" />
+                <span>Books & Materials</span>
+              </Button>
+            </Link>
             <Button onClick={() => setShowSubjectModal(true)} variant="outline" size="sm" className="text-xs">
-              <FolderPlus className="w-3.5 h-3.5" />
+              <FolderPlus className="w-3.5 h-3.5 mr-1" />
               <span>Add Subject</span>
             </Button>
             <Button onClick={() => setShowPublishModal(true)} variant="primary" size="sm" className="text-xs">
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 mr-1" />
               <span>Publish Worksheet PDF</span>
             </Button>
           </div>
