@@ -1,0 +1,312 @@
+{
+  "subjects": [
+    {
+      "id": "sub-2",
+      "name": "Science",
+      "icon": "flask",
+      "description": "Plants, Animals & Natural Phenomena",
+      "createdAt": "2026-09-01T10:00:00Z"
+    },
+    {
+      "id": "sub-3",
+      "name": "Social Science",
+      "icon": "globe",
+      "description": "History, Village & Community",
+      "createdAt": "2026-09-01T10:00:00Z"
+    },
+    {
+      "id": "sub-4",
+      "name": "Language & Literature",
+      "icon": "book",
+      "description": "Santali & Hindi Grammar & Reading",
+      "createdAt": "2026-09-01T10:00:00Z"
+    }
+  ],
+  "worksheets": [
+    {
+      "id": "ws-101",
+      "title": "Fractions & Basic Division",
+      "subjectId": "sub-1",
+      "subjectName": "Mathematics",
+      "originalLanguage": "Hindi",
+      "fileName": "Fractions_Worksheet.pdf",
+      "deadline": "2026-10-15T18:00:00Z",
+      "status": "active",
+      "createdAt": "2026-09-20T09:00:00Z",
+      "items": [
+        {
+          "id": "w1",
+          "original": "यदि आपके पास 8 आम हैं और आप उन्हें 4 दोस्तों में बराबर बांटते हैं, तो प्रत्येक को कितने मिलेंगे?",
+          "translated": "ᱡᱩᱫᱤ ᱟᱢ ᱴᱷᱮᱱ ᱘ ᱴᱤ ᱩᱞ ᱢᱮᱱᱟᱜ-ᱟ ᱟᱨ ᱟᱢ ᱔ ᱡᱚᱱ ᱜᱟᱛᱮ ᱨᱮ ᱥᱚᱢᱟᱱ ᱮᱢ ᱦᱟᱹᱴᱤᱧᱟ, ᱛᱚᱵᱮ ᱡᱚᱛᱚ ᱦᱚᱲ ᱛᱤᱱᱟᱹᱜ ᱠᱚ ᱧᱟᱢᱟ?",
+          "translatedOlChiki": "ᱡᱩᱫᱤ ᱟᱢ ᱴᱷᱮᱱ ᱘ ᱴᱤ ᱩᱞ ᱢᱮᱱᱟᱜ-ᱟ ᱟᱨ ᱟᱢ ᱔ ᱡᱚᱱ ᱜᱟᱛᱮ ᱨᱮ ᱥᱚᱢᱟᱱ ᱮᱢ ᱦᱟᱹᱴᱤᱧᱟ?",
+          "concept": "Equal Sharing",
+          "localExample": "Local example: Distributing mangoes in your village orchard equally."
+        },
+        {
+          "id": "w2",
+          "original": "1/2 और 1/4 में से कौन सा भिन्न बड़ा है?",
+          "translated": "᱑/᱒ ᱟᱨ ᱑/᱔ ᱢᱩᱫᱽ ᱨᱮ ᱚᱠᱟ ᱦᱟᱹᱴᱤᱧ ᱞᱮᱠᱷᱟ ᱢᱟᱨᱟᱝᱟ?",
+          "translatedOlChiki": "᱑/᱒ ᱟᱨ ᱑/᱔ ᱢᱩᱫᱽ ᱨᱮ ᱚᱠᱟ ᱦᱟᱹᱴᱤᱧ ᱞᱮᱠᱷᱟ ᱢᱟᱨᱟᱝᱟ?",
+          "concept": "Fractions Comparison",
+          "localExample": "Local example: Half a roti vs one-quarter of a roti."
+        }
+      ]
+    },
+    {
+      "id": "ws-102",
+      "title": "Plants Around Us (Chapter 4)",
+      "subjectId": "sub-2",
+      "subjectName": "Science",
+      "originalLanguage": "Hindi",
+      "fileName": "Plants_Around_Us.pdf",
+      "deadline": "2026-10-05T17:00:00Z",
+      "status": "active",
+      "createdAt": "2026-09-22T14:30:00Z",
+      "items": [
+        {
+          "id": "w101",
+          "original": "पौधे अपना भोजन कैसे बनाते हैं? कारण सहित उत्तर दीजिए।",
+          "translated": "গাছ রেয়াগ যোম ওকা লেকান বেনাও কাটু? कारण सह उत्तर मे।",
+          "translatedOlChiki": "ᱜᱟᱪ ᱨᱮᱭᱟᱜ ᱡᱚᱢ ᱚᱠᱟ ᱞᱮᱠᱟᱱ ᱵᱮᱱᱟᱣ ᱠᱟᱱᱟ?",
+          "concept": "Photosynthesis",
+          "localExample": "Local example: Sal trees turning lush green after monsoon rains."
+        },
+        {
+          "id": "w102",
+          "original": "एक बीज को पौधा बनने के लिए किन-किन चीज़ों की आवश्यकता होती है?",
+          "translated": "মিত্ জাङ् দেᱟ গাছ বাᱲᱟᱭ আᱲᱤ লাগিত্ চেᱴ্ চᱮᱴ্ বা'ᱱᱩᱠ লাগিত্ چاہিয়'?",
+          "translatedOlChiki": "ᱢᱤᱫ ᱡᱟᱶ ᱫᱚ ᱫᱟᱨᱮ ᱵᱟᱲᱟᱭ ᱞᱟᱹᱜᱤᱫ ᱪᱮᱫ ᱪᱮᱫ ᱵᱟᱹᱱᱩᱠ ᱪᱟᱦᱤ",
+          "concept": "Seed Germination",
+          "localExample": "Local example: Paddy seeds sown before rain."
+        }
+      ]
+    }
+  ],
+  "submissions": [
+    {
+      "id": "subm-1",
+      "worksheetId": "ws-101",
+      "worksheetTitle": "Fractions & Basic Division",
+      "subjectId": "sub-1",
+      "subjectName": "Mathematics",
+      "studentId": "s1",
+      "studentName": "Sona Murmu",
+      "submittedAt": "2026-09-24T11:20:00Z",
+      "fileName": "Sona_Math_Fractions_Completed.pdf",
+      "status": "Graded",
+      "grade": "A",
+      "marks": "18/20",
+      "scorePercentage": 90,
+      "feedback": "Very neat work on fractions! Ol Chiki handwriting is clear. Keep practicing unit comparisons.",
+      "checkedAt": "2026-09-25T14:15:00Z",
+      "checkedFileName": "Sona_Math_Fractions_Checked.pdf",
+      "aiConvertedFileName": "Sona_Math_Fractions_Converted_En_Hi.pdf",
+      "aiConvertedText": "Student Answer 1: 2 mangoes each (ᱡᱚᱛᱚ ᱦᱚᱲ ᱵᱟᱨᱭᱟ ᱠᱟᱛᱮ ᱩᱞ ᱠᱚ ᱧᱟᱢᱟ - प्रत्येक को 2 आम मिलेंगे)\nStudent Answer 2: 1/2 is greater than 1/4 (᱑/᱒ ᱫᱚ ᱑/᱔ ᱠᱷᱚᱱ ᱢᱟᱨᱟᱝᱟ - 1/2, 1/4 से बड़ा है)",
+      "answers": [
+        {
+          "questionId": "w1",
+          "question": "यदि आपके पास 8 आम हैं और आप उन्हें 4 दोस्तों में बराबर बांटते हैं, तो प्रत्येक को कितने मिलेंगे?",
+          "studentAnswerSantali": "ᱡᱚᱛᱚ ᱦᱚᱲ ᱵᱟᱨᱭᱟ (2) ᱠᱟᱛᱮ ᱩᱞ ᱠᱚ ᱧᱟᱢᱟ",
+          "aiConvertedHindi": "प्रत्येक दोस्त को 2 आम मिलेंगे (8 ÷ 4 = 2)",
+          "aiConvertedEnglish": "Each friend gets 2 mangoes (8 divided by 4 = 2)",
+          "marksAwarded": "10/10"
+        },
+        {
+          "questionId": "w2",
+          "question": "1/2 और 1/4 में से कौन सा भिन्न बड़ा है?",
+          "studentAnswerSantali": "᱑/᱒ ᱫᱚ ᱑/᱔ ᱠᱷᱚᱱ ᱢᱟᱨᱟᱝ ᱦᱟᱹᱴᱤᱧ ᱠᱟᱱᱟ",
+          "aiConvertedHindi": "1/2, 1/4 से बड़ा भिन्न है",
+          "aiConvertedEnglish": "1/2 is a larger fraction than 1/4",
+          "marksAwarded": "8/10"
+        }
+      ]
+    },
+    {
+      "id": "subm-2",
+      "worksheetId": "ws-102",
+      "worksheetTitle": "Plants Around Us (Chapter 4)",
+      "subjectId": "sub-2",
+      "subjectName": "Science",
+      "studentId": "s1",
+      "studentName": "Sona Murmu",
+      "submittedAt": "2026-09-28T09:40:00Z",
+      "fileName": "Sona_Science_Plants_Submitted.pdf",
+      "status": "Submitted",
+      "marks": "Pending",
+      "feedback": "",
+      "answers": [
+        {
+          "questionId": "w101",
+          "question": "पौधे अपना भोजन कैसे बनाते हैं? कारण सहित उत्तर दीजिए।",
+          "studentAnswerSantali": "ᱫᱟᱨᱮ ᱠᱚᱫᱚ ᱥᱤᱛᱩᱝ ᱵᱮᱲᱟ ᱟᱨ ᱫᱟᱜ ᱦᱟᱥᱟ ᱠᱷᱚᱱ ᱡᱚᱢᱟᱜ ᱠᱚ ᱛᱮᱭᱟᱨᱟ (ᱯᱷᱚᱴᱚᱥᱤᱱᱛᱷᱮᱥᱤᱥ)",
+          "aiConvertedHindi": "पौधे धूप, पानी और मिट्टी से भोजन बनाते हैं (प्रकाश संश्लेषण द्वारा)",
+          "aiConvertedEnglish": "Plants prepare food using sunlight, water, and soil nutrients (photosynthesis)"
+        },
+        {
+          "questionId": "w102",
+          "question": "एक बीज को पौधा बनने के लिए किन-किन चीज़ों की आवश्यकता होती है?",
+          "studentAnswerSantali": "ᱢᱤᱫᱴᱟᱹᱝ ᱡᱟᱝ ᱫᱟᱨᱮ ᱵᱮᱱᱟᱣ ᱞᱟᱹᱜᱤᱫ ᱦᱟᱥᱟ, ᱫᱟᱜ ᱟᱨ ᱥᱤᱛᱩᱝ ᱞᱟᱹᱠᱛᱤᱜ-ᱟ",
+          "aiConvertedHindi": "बीज को अंकुरित होने के लिए मिट्टी, पानी और धूप की आवश्यकता होती है",
+          "aiConvertedEnglish": "A seed needs soil, moisture/water, and sunlight to germinate into a plant"
+        }
+      ]
+    },
+    {
+      "id": "subm-3",
+      "worksheetId": "ws-101",
+      "worksheetTitle": "Fractions & Basic Division",
+      "subjectId": "sub-1",
+      "subjectName": "Mathematics",
+      "studentId": "s2",
+      "studentName": "Bijay Hembrom",
+      "submittedAt": "2026-09-24T16:00:00Z",
+      "fileName": "Bijay_Fractions_Worksheet.pdf",
+      "status": "Graded",
+      "grade": "A+",
+      "marks": "20/20",
+      "scorePercentage": 100,
+      "feedback": "Exceptional mastery of fractional reasoning and clear step-by-step Ol Chiki solution.",
+      "checkedAt": "2026-09-25T15:00:00Z",
+      "checkedFileName": "Bijay_Fractions_Checked.pdf",
+      "aiConvertedFileName": "Bijay_Fractions_Converted.pdf",
+      "aiConvertedText": "Student answered both questions with complete accuracy and reasoning."
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-1",
+      "studentId": "s1",
+      "title": "New worksheet published",
+      "message": "Science — Plants Around Us (Chapter 4)",
+      "subjectName": "Science",
+      "worksheetId": "ws-102",
+      "deadline": "2026-10-05T17:00:00Z",
+      "read": false,
+      "createdAt": "2026-09-22T14:30:00Z"
+    }
+  ],
+  "userProfile": {
+    "id": "s1",
+    "name": "Sona Murmu",
+    "role": "student",
+    "rollNo": "24",
+    "grade": "Grade 4",
+    "school": "Rajkiya Prathmik Vidyalaya, Dumka",
+    "pin": "1234",
+    "language": "en",
+    "badges": 6,
+    "accuracy": 82,
+    "weakConcepts": [
+      "Photosynthesis",
+      "Addition carry-over"
+    ],
+    "seenCardIds": [
+      "fc-1",
+      "fc-2",
+      "fc-3",
+      "fc-4",
+      "fc-5"
+    ]
+  },
+  "students": [
+    {
+      "id": "s1",
+      "name": "Sona Murmu",
+      "rollNo": "24",
+      "grade": "Grade 4",
+      "school": "Rajkiya Prathmik Vidyalaya, Dumka",
+      "pin": "1234",
+      "language": "en",
+      "accuracy": 82,
+      "badges": 6,
+      "weakConcepts": [
+        "Photosynthesis",
+        "Addition carry-over"
+      ],
+      "cardsReviewed": 142,
+      "masteryPercentage": 78,
+      "createdAt": "2026-09-01T08:00:00Z"
+    },
+    {
+      "id": "s2",
+      "name": "Bijay Hembrom",
+      "rollNo": "12",
+      "grade": "Grade 4",
+      "school": "Rajkiya Prathmik Vidyalaya, Dumka",
+      "pin": "4821",
+      "language": "sat",
+      "accuracy": 91,
+      "badges": 9,
+      "weakConcepts": [
+        "Fractions Comparison"
+      ],
+      "cardsReviewed": 198,
+      "masteryPercentage": 88,
+      "createdAt": "2026-09-01T08:00:00Z"
+    },
+    {
+      "id": "s3",
+      "name": "Rupa Tudu",
+      "rollNo": "08",
+      "grade": "Grade 4",
+      "school": "Rajkiya Prathmik Vidyalaya, Dumka",
+      "pin": "7319",
+      "language": "hi",
+      "accuracy": 74,
+      "badges": 4,
+      "weakConcepts": [
+        "Plant Parts",
+        "Seed Germination"
+      ],
+      "cardsReviewed": 110,
+      "masteryPercentage": 69,
+      "createdAt": "2026-09-01T08:00:00Z"
+    },
+    {
+      "id": "s4",
+      "name": "Chandan Hansda",
+      "rollNo": "17",
+      "grade": "Grade 4",
+      "school": "Rajkiya Prathmik Vidyalaya, Dumka",
+      "pin": "5602",
+      "language": "en",
+      "accuracy": 86,
+      "badges": 7,
+      "weakConcepts": [
+        "Division remainder"
+      ],
+      "cardsReviewed": 165,
+      "masteryPercentage": 82,
+      "createdAt": "2026-09-01T08:00:00Z"
+    },
+    {
+      "id": "s-1790686652999",
+      "name": "hw",
+      "school": "Rajkiya Prathmik Vidyalaya, Dumka",
+      "grade": "Grade 4",
+      "rollNo": "23",
+      "pin": "4078",
+      "language": "en",
+      "accuracy": 0,
+      "badges": 0,
+      "weakConcepts": [],
+      "cardsReviewed": 0,
+      "masteryPercentage": 0,
+      "createdAt": "2026-09-29T12:57:32.999Z"
+    }
+  ],
+  "teacherProfile": {
+    "id": "t1",
+    "name": "Guruji Hemant Soren",
+    "email": "hemant.soren@aaroh-edu.in",
+    "role": "teacher",
+    "employeeId": "EDU-JH-2024-089",
+    "assignedGrade": "Grade 4 (Sections A & B)",
+    "schoolName": "Rajkiya Prathmik Vidyalaya, Dumka",
+    "subjectSpecialization": "Science & Santali Language",
+    "language": "en",
+    "autoAiTranslation": true,
+    "lateSubmissionsAllowed": true,
+    "notifyOnSubmission": true
+  }
+}
