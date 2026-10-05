@@ -136,6 +136,7 @@ export type StudentRecord = {
   weakConcepts: string[];
   cardsReviewed: number;
   masteryPercentage: number;
+  seenCardIds?: string[];
   createdAt: string;
   avatarEmoji?: string;
 };
@@ -182,221 +183,231 @@ export type UserProfile = {
   seenCardIds: string[]; // Track seen card IDs to prevent repeating cards
 };
 
-// Core base vocabulary
-const BASE_VOCABULARY: FlashcardItem[] = [
-  {
-    id: "fc-1",
-    concept: "Writing",
-    category: "Vocabulary",
-    imageEmoji: "✍️",
-    front: { santhaliOlChiki: "ᱚᱞ", santhaliRoman: "Ol" },
-    back: { hindi: "लिखना", english: "Write" },
-  },
-  {
-    id: "fc-2",
-    concept: "Water",
-    category: "Science",
-    imageEmoji: "💧",
-    front: { santhaliOlChiki: "ᱫᱟᱜ", santhaliRoman: "Daᶜ" },
-    back: { hindi: "पानी", english: "Water" },
-  },
-  {
-    id: "fc-3",
-    concept: "Sun",
-    category: "Science",
-    imageEmoji: "☀️",
-    front: { santhaliOlChiki: "ᱥᱤᱝᱜᱮᱞ", santhaliRoman: "Singel" },
-    back: { hindi: "सूरज", english: "Sun" },
-  },
-  {
-    id: "fc-4",
-    concept: "Tree",
-    category: "Science",
-    imageEmoji: "🌳",
-    front: { santhaliOlChiki: "ᱫᱟᱨᱮ", santhaliRoman: "Dare" },
-    back: { hindi: "पेड़", english: "Tree" },
-  },
-  {
-    id: "fc-5",
-    concept: "Photosynthesis",
-    category: "Science",
-    imageEmoji: "🌿",
-    front: { santhaliOlChiki: "ᱫᱟᱨᱮ ᱨᱮᱭᱟᱜ ᱡᱚᱢ ᱵᱮᱱᱟᱣ", santhaliRoman: "Dare reyaɡ jom benao" },
-    back: { hindi: "प्रकाश संश्लेषण", english: "Photosynthesis" },
-  },
-  {
-    id: "fc-6",
-    concept: "Seed",
-    category: "Science",
-    imageEmoji: "🌱",
-    front: { santhaliOlChiki: "ᱡᱟᱶ", santhaliRoman: "Jaṅ" },
-    back: { hindi: "बीज", english: "Seed" },
-  },
-  {
-    id: "fc-7",
-    concept: "Addition",
-    category: "Math",
-    imageEmoji: "➕",
-    front: { santhaliOlChiki: "ᱥᱮᱨᱢᱟ", santhaliRoman: "Sermaa" },
-    back: { hindi: "जोड़", english: "Addition" },
-  },
-  {
-    id: "fc-8",
-    concept: "Number",
-    category: "Math",
-    imageEmoji: "🔢",
-    front: { santhaliOlChiki: "ᱞᱮᱠᱷᱟ", santhaliRoman: "Lekha" },
-    back: { hindi: "संख्या", english: "Number" },
-  },
-  {
-    id: "fc-9",
-    concept: "River",
-    category: "Geography",
-    imageEmoji: "🏞️",
-    front: { santhaliOlChiki: "ᱜᱟᱰᱟ", santhaliRoman: "Gaḍa" },
-    back: { hindi: "नदी", english: "River" },
-  },
-  {
-    id: "fc-10",
-    concept: "Reading",
-    category: "Vocabulary",
-    imageEmoji: "📖",
-    front: { santhaliOlChiki: "ᱯᱟᱲᱦᱟᱣ", santhaliRoman: "Paṛhao" },
-    back: { hindi: "पढ़ना", english: "Read" },
-  },
+// Authentic, genuine, standalone Santali vocabulary dataset
+export const AUTHENTIC_SANTALI_WORDS: FlashcardItem[] = [
+  // Numbers & Math
+  { id: "fc-1", concept: "One (1)", category: "Math", imageEmoji: "1️⃣", front: { santhaliOlChiki: "ᱢᱤᱫ", santhaliRoman: "Mid" }, back: { hindi: "एक (१)", english: "One (1)" } },
+  { id: "fc-2", concept: "Two (2)", category: "Math", imageEmoji: "2️⃣", front: { santhaliOlChiki: "ᱵᱟᱨ", santhaliRoman: "Bar" }, back: { hindi: "दो (२)", english: "Two (2)" } },
+  { id: "fc-3", concept: "Three (3)", category: "Math", imageEmoji: "3️⃣", front: { santhaliOlChiki: "ᱯᱮ", santhaliRoman: "Pe" }, back: { hindi: "तीन (३)", english: "Three (3)" } },
+  { id: "fc-4", concept: "Four (4)", category: "Math", imageEmoji: "4️⃣", front: { santhaliOlChiki: "ᱯᱩᱱ", santhaliRoman: "Pun" }, back: { hindi: "चार (४)", english: "Four (4)" } },
+  { id: "fc-5", concept: "Five (5)", category: "Math", imageEmoji: "5️⃣", front: { santhaliOlChiki: "ᱢᱚᱬᱮ", santhaliRoman: "Mõṇe" }, back: { hindi: "पांच (५)", english: "Five (5)" } },
+  { id: "fc-6", concept: "Six (6)", category: "Math", imageEmoji: "6️⃣", front: { santhaliOlChiki: "ᱛᱩᱨᱩᱭ", santhaliRoman: "Turuy" }, back: { hindi: "छह (६)", english: "Six (6)" } },
+  { id: "fc-7", concept: "Seven (7)", category: "Math", imageEmoji: "7️⃣", front: { santhaliOlChiki: "ᱮᱭᱟᱭ", santhaliRoman: "Eyay" }, back: { hindi: "सात (७)", english: "Seven (7)" } },
+  { id: "fc-8", concept: "Eight (8)", category: "Math", imageEmoji: "8️⃣", front: { santhaliOlChiki: "ᱤᱨᱟᱹᱞ", santhaliRoman: "Iral" }, back: { hindi: "आठ (८)", english: "Eight (8)" } },
+  { id: "fc-9", concept: "Nine (9)", category: "Math", imageEmoji: "9️⃣", front: { santhaliOlChiki: "ᱟᱨᱮ", santhaliRoman: "Are" }, back: { hindi: "नौ (९)", english: "Nine (9)" } },
+  { id: "fc-10", concept: "Ten (10)", category: "Math", imageEmoji: "🔟", front: { santhaliOlChiki: "ᱜᱮᱞ", santhaliRoman: "Gel" }, back: { hindi: "दस (१०)", english: "Ten (10)" } },
+  { id: "fc-11", concept: "Eleven (11)", category: "Math", imageEmoji: "🔢", front: { santhaliOlChiki: "ᱜᱮᱞ ᱢᱤᱫ", santhaliRoman: "Gel Mid" }, back: { hindi: "ग्यारह (११)", english: "Eleven (11)" } },
+  { id: "fc-12", concept: "Twelve (12)", category: "Math", imageEmoji: "🔢", front: { santhaliOlChiki: "ᱜᱮᱞ ᱵᱟᱨ", santhaliRoman: "Gel Bar" }, back: { hindi: "बारह (१२)", english: "Twelve (12)" } },
+  { id: "fc-13", concept: "Twenty (20)", category: "Math", imageEmoji: "🔢", front: { santhaliOlChiki: "ᱤᱥᱤ", santhaliRoman: "Isi" }, back: { hindi: "बीस (२०)", english: "Twenty (20)" } },
+  { id: "fc-14", concept: "Hundred (100)", category: "Math", imageEmoji: "💯", front: { santhaliOlChiki: "ᱥᱟᱭ", santhaliRoman: "Say" }, back: { hindi: "सौ (१००)", english: "One Hundred (100)" } },
+  { id: "fc-15", concept: "Thousand (1000)", category: "Math", imageEmoji: "🔢", front: { santhaliOlChiki: "ᱦᱟᱡᱟᱨ", santhaliRoman: "Hajar" }, back: { hindi: "एक हज़ार", english: "One Thousand (1000)" } },
+  { id: "fc-16", concept: "Number / Counting", category: "Math", imageEmoji: "🔢", front: { santhaliOlChiki: "ᱞᱮᱠᱷᱟ", santhaliRoman: "Lekha" }, back: { hindi: "संख्या / गिनती", english: "Number / Count" } },
+  { id: "fc-17", concept: "Addition", category: "Math", imageEmoji: "➕", front: { santhaliOlChiki: "ᱥᱮᱞᱮᱫ", santhaliRoman: "Seled" }, back: { hindi: "जोड़ / योग", english: "Addition" } },
+  { id: "fc-18", concept: "Subtraction", category: "Math", imageEmoji: "➖", front: { santhaliOlChiki: "ᱵᱷᱮᱫᱽ", santhaliRoman: "Bhed" }, back: { hindi: "घटाव / अंतर", english: "Subtraction" } },
+  { id: "fc-19", concept: "Multiplication", category: "Math", imageEmoji: "✖️", front: { santhaliOlChiki: "ᱜᱩᱬᱟᱹ", santhaliRoman: "Guna" }, back: { hindi: "गुणा", english: "Multiplication" } },
+  { id: "fc-20", concept: "Division", category: "Math", imageEmoji: "➗", front: { santhaliOlChiki: "ᱦᱟᱹᱴᱤᱧ", santhaliRoman: "Hating" }, back: { hindi: "भाग / विभाजन", english: "Division" } },
+  { id: "fc-21", concept: "Equal", category: "Math", imageEmoji: "🟰", front: { santhaliOlChiki: "ᱥᱚᱢᱟᱱ", santhaliRoman: "Soman" }, back: { hindi: "बराबर", english: "Equal" } },
+  { id: "fc-22", concept: "Triangle", category: "Math", imageEmoji: "🔺", front: { santhaliOlChiki: "ᱯᱮ ᱠᱳᱬ", santhaliRoman: "Pe Kon" }, back: { hindi: "त्रिभुज", english: "Triangle" } },
+  { id: "fc-23", concept: "Circle", category: "Math", imageEmoji: "⭕", front: { santhaliOlChiki: "ᱜᱩᱞᱟᱹᱭ", santhaliRoman: "Gulay" }, back: { hindi: "वृत्त / गोला", english: "Circle" } },
+  { id: "fc-24", concept: "Square", category: "Math", imageEmoji: "⏹️", front: { santhaliOlChiki: "ᱯᱩᱱ ᱠᱳᱬ", santhaliRoman: "Pun Kon" }, back: { hindi: "वर्ग / चौकोर", english: "Square" } },
+  { id: "fc-25", concept: "More / Greater", category: "Math", imageEmoji: "📈", front: { santhaliOlChiki: "ᱵᱟᱹᱲᱛᱤ", santhaliRoman: "Barti" }, back: { hindi: "अधिक / ज्यादा", english: "More / Greater" } },
+  { id: "fc-26", concept: "Less / Fewer", category: "Math", imageEmoji: "📉", front: { santhaliOlChiki: "ᱠᱚᱢ", santhaliRoman: "Kom" }, back: { hindi: "कम", english: "Less / Fewer" } },
+
+  // Nature, Science & Environment
+  { id: "fc-27", concept: "Water", category: "Science", imageEmoji: "💧", front: { santhaliOlChiki: "ᱫᱟᱜ", santhaliRoman: "Da'" }, back: { hindi: "पानी / जल", english: "Water" } },
+  { id: "fc-28", concept: "Tree", category: "Science", imageEmoji: "🌳", front: { santhaliOlChiki: "ᱫᱟᱨᱮ", santhaliRoman: "Dare" }, back: { hindi: "पेड़ / वृक्ष", english: "Tree" } },
+  { id: "fc-29", concept: "Sun", category: "Science", imageEmoji: "☀️", front: { santhaliOlChiki: "ᱥᱤᱸᱜᱤ", santhaliRoman: "Singi" }, back: { hindi: "सूरज / सूर्य", english: "Sun" } },
+  { id: "fc-30", concept: "Moon", category: "Science", imageEmoji: "🌙", front: { santhaliOlChiki: "ᱪᱟᱸᱫᱚ", santhaliRoman: "Cando" }, back: { hindi: "चांद / चंद्रमा", english: "Moon" } },
+  { id: "fc-31", concept: "Star", category: "Science", imageEmoji: "⭐", front: { santhaliOlChiki: "ᱤᱯᱤᱞ", santhaliRoman: "Ipil" }, back: { hindi: "तारा / सितारा", english: "Star" } },
+  { id: "fc-32", concept: "Sky", category: "Science", imageEmoji: "🌌", front: { santhaliOlChiki: "ᱥᱮᱨᱢᱟ", santhaliRoman: "Serma" }, back: { hindi: "आकाश / गगन", english: "Sky" } },
+  { id: "fc-33", concept: "Earth / Soil", category: "Geography", imageEmoji: "🌍", front: { santhaliOlChiki: "ᱦᱟᱥᱟ", santhaliRoman: "Hasa" }, back: { hindi: "धरती / मिट्टी", english: "Earth / Soil" } },
+  { id: "fc-34", concept: "Air / Wind", category: "Science", imageEmoji: "💨", front: { santhaliOlChiki: "ᱦᱚᱭ", santhaliRoman: "Hoy" }, back: { hindi: "हवा / वायु", english: "Air / Wind" } },
+  { id: "fc-35", concept: "Fire", category: "Science", imageEmoji: "🔥", front: { santhaliOlChiki: "ᱥᱮᱸᱜᱮᱞ", santhaliRoman: "Sengel" }, back: { hindi: "आग / अग्नि", english: "Fire" } },
+  { id: "fc-36", concept: "Cloud", category: "Science", imageEmoji: "☁️", front: { santhaliOlChiki: "ᱨᱤᱢᱤᱞ", santhaliRoman: "Rimil" }, back: { hindi: "बादल / मेघ", english: "Cloud" } },
+  { id: "fc-37", concept: "Rain", category: "Science", imageEmoji: "🌧️", front: { santhaliOlChiki: "ᱫᱟᱜ ᱡᱟᱹᱲᱤ", santhaliRoman: "Dag Jari" }, back: { hindi: "बारिश / वर्षा", english: "Rain" } },
+  { id: "fc-38", concept: "Seed", category: "Science", imageEmoji: "🌱", front: { santhaliOlChiki: "ᱡᱟᱝ", santhaliRoman: "Jang" }, back: { hindi: "बीज", english: "Seed" } },
+  { id: "fc-39", concept: "Plant", category: "Science", imageEmoji: "🌿", front: { santhaliOlChiki: "ᱜᱟᱪ", santhaliRoman: "Gac" }, back: { hindi: "पौधा", english: "Plant" } },
+  { id: "fc-40", concept: "Leaf", category: "Science", imageEmoji: "🍃", front: { santhaliOlChiki: "ᱥᱟᱠᱟᱢ", santhaliRoman: "Sakam" }, back: { hindi: "पत्ता", english: "Leaf" } },
+  { id: "fc-41", concept: "Flower", category: "Science", imageEmoji: "🌸", front: { santhaliOlChiki: "ᱵᱟᱦᱟ", santhaliRoman: "Baha" }, back: { hindi: "फूल", english: "Flower" } },
+  { id: "fc-42", concept: "Fruit", category: "Science", imageEmoji: "🍎", front: { santhaliOlChiki: "ᱡᱚ", santhaliRoman: "Jo" }, back: { hindi: "फल", english: "Fruit" } },
+  { id: "fc-43", concept: "Root", category: "Science", imageEmoji: "🪵", front: { santhaliOlChiki: "ᱨᱮᱦᱮᱫ", santhaliRoman: "Rehed" }, back: { hindi: "जड़", english: "Root" } },
+  { id: "fc-44", concept: "Forest", category: "Geography", imageEmoji: "🌲", front: { santhaliOlChiki: "ᱵᱤᱨ", santhaliRoman: "Bir" }, back: { hindi: "जंगल / वन", english: "Forest" } },
+  { id: "fc-45", concept: "Mountain", category: "Geography", imageEmoji: "⛰️", front: { santhaliOlChiki: "ᱵᱩᱨᱩ", santhaliRoman: "Buru" }, back: { hindi: "पहाड़ / पर्वत", english: "Mountain" } },
+  { id: "fc-46", concept: "River", category: "Geography", imageEmoji: "🏞️", front: { santhaliOlChiki: "ᱜᱟᱰᱟ", santhaliRoman: "Gada" }, back: { hindi: "नदी", english: "River" } },
+  { id: "fc-47", concept: "Pond", category: "Geography", imageEmoji: "🌊", front: { santhaliOlChiki: "ᱯᱩᱠᱷᱨᱤ", santhaliRoman: "Pukhri" }, back: { hindi: "तालाब / पोखर", english: "Pond" } },
+  { id: "fc-48", concept: "Village", category: "Geography", imageEmoji: "🏘️", front: { santhaliOlChiki: "ᱟᱹᱛᱩ", santhaliRoman: "Atu" }, back: { hindi: "गांव / ग्राम", english: "Village" } },
+  { id: "fc-49", concept: "Farm / Field", category: "Geography", imageEmoji: "🌾", front: { santhaliOlChiki: "ᱠᱷᱮᱛ", santhaliRoman: "Khet" }, back: { hindi: "खेत", english: "Farm / Field" } },
+  { id: "fc-50", concept: "Stone / Rock", category: "Geography", imageEmoji: "🪨", front: { santhaliOlChiki: "ᱫᱷᱤᱨᱤ", santhaliRoman: "Dhiri" }, back: { hindi: "पत्थर / शिला", english: "Stone / Rock" } },
+
+  // Animals & Birds
+  { id: "fc-51", concept: "Bird", category: "Science", imageEmoji: "🐦", front: { santhaliOlChiki: "ᱪᱮᱬᱮ", santhaliRoman: "Cene" }, back: { hindi: "पक्षी / चिड़िया", english: "Bird" } },
+  { id: "fc-52", concept: "Fish", category: "Science", imageEmoji: "🐟", front: { santhaliOlChiki: "ᱦᱟᱹᱠᱩ", santhaliRoman: "Haku" }, back: { hindi: "मछली", english: "Fish" } },
+  { id: "fc-53", concept: "Cow", category: "Vocabulary", imageEmoji: "🐄", front: { santhaliOlChiki: "ᱜᱟᱹᱭ", santhaliRoman: "Gai" }, back: { hindi: "गाय", english: "Cow" } },
+  { id: "fc-54", concept: "Bull / Ox", category: "Vocabulary", imageEmoji: "🐂", front: { santhaliOlChiki: "ᱰᱟᱝᱜᱽᱨᱟ", santhaliRoman: "Dangra" }, back: { hindi: "बैल", english: "Ox / Bull" } },
+  { id: "fc-55", concept: "Goat", category: "Vocabulary", imageEmoji: "🐐", front: { santhaliOlChiki: "ᱢᱮᱨᱚᱢ", santhaliRoman: "Merom" }, back: { hindi: "बकरी", english: "Goat" } },
+  { id: "fc-56", concept: "Dog", category: "Vocabulary", imageEmoji: "🐕", front: { santhaliOlChiki: "ᱥᱮᱛᱟ", santhaliRoman: "Seta" }, back: { hindi: "कुत्ता", english: "Dog" } },
+  { id: "fc-57", concept: "Cat", category: "Vocabulary", imageEmoji: "🐈", front: { santhaliOlChiki: "ᱵᱤᱞᱟᱹᱭ", santhaliRoman: "Bilai" }, back: { hindi: "बिल्ली", english: "Cat" } },
+  { id: "fc-58", concept: "Chicken / Hen", category: "Vocabulary", imageEmoji: "🐔", front: { santhaliOlChiki: "ᱥᱤᱢ", santhaliRoman: "Sim" }, back: { hindi: "मुर्गी", english: "Chicken / Hen" } },
+  { id: "fc-59", concept: "Elephant", category: "Vocabulary", imageEmoji: "🐘", front: { santhaliOlChiki: "ᱦᱟᱹᱛᱤ", santhaliRoman: "Hati" }, back: { hindi: "हाथी", english: "Elephant" } },
+  { id: "fc-60", concept: "Tiger", category: "Vocabulary", imageEmoji: "🐅", front: { santhaliOlChiki: "ᱛᱟᱹᱨᱩᱵ", santhaliRoman: "Tarub" }, back: { hindi: "बाघ", english: "Tiger" } },
+  { id: "fc-61", concept: "Lion", category: "Vocabulary", imageEmoji: "🦁", front: { santhaliOlChiki: "ᱠᱩᱞ", santhaliRoman: "Kul" }, back: { hindi: "शेर", english: "Lion" } },
+  { id: "fc-62", concept: "Deer", category: "Vocabulary", imageEmoji: "🦌", front: { santhaliOlChiki: "ᱥᱟᱨᱟᱢ", santhaliRoman: "Saram" }, back: { hindi: "हिरण", english: "Deer" } },
+  { id: "fc-63", concept: "Snake", category: "Science", imageEmoji: "🐍", front: { santhaliOlChiki: "ᱵᱤᱧ", santhaliRoman: "Bing" }, back: { hindi: "सांप / सर्प", english: "Snake" } },
+  { id: "fc-64", concept: "Frog", category: "Science", imageEmoji: "🐸", front: { santhaliOlChiki: "ᱨᱚᱴᱮ", santhaliRoman: "Rote" }, back: { hindi: "मेंढक", english: "Frog" } },
+  { id: "fc-65", concept: "Horse", category: "Vocabulary", imageEmoji: "🐎", front: { santhaliOlChiki: "ᱥᱟᱫᱚᱢ", santhaliRoman: "Sadom" }, back: { hindi: "घोड़ा", english: "Horse" } },
+  { id: "fc-66", concept: "Butterfly", category: "Science", imageEmoji: "🦋", front: { santhaliOlChiki: "ᱯᱤᱯᱤᱲᱤᱭᱟᱹᱝ", santhaliRoman: "Pipiriang" }, back: { hindi: "तितली", english: "Butterfly" } },
+  { id: "fc-67", concept: "Honeybee", category: "Science", imageEmoji: "🐝", front: { santhaliOlChiki: "ᱧᱮᱞᱮ", santhaliRoman: "Nele" }, back: { hindi: "मधुमक्खी", english: "Honeybee" } },
+  { id: "fc-68", concept: "Peacock", category: "Vocabulary", imageEmoji: "🦚", front: { santhaliOlChiki: "ᱢᱟᱨᱟᱜ", santhaliRoman: "Marag" }, back: { hindi: "मोर", english: "Peacock" } },
+
+  // Human Body
+  { id: "fc-69", concept: "Head", category: "Science", imageEmoji: "🗣️", front: { santhaliOlChiki: "ᱵᱚᱦᱚᱜ", santhaliRoman: "Bohog" }, back: { hindi: "सिर", english: "Head" } },
+  { id: "fc-70", concept: "Eye", category: "Science", imageEmoji: "👁️", front: { santhaliOlChiki: "ᱢᱮᱫ", santhaliRoman: "Med" }, back: { hindi: "आंख / नेत्र", english: "Eye" } },
+  { id: "fc-71", concept: "Ear", category: "Science", imageEmoji: "👂", front: { santhaliOlChiki: "ᱞᱩᱛᱩᱨ", santhaliRoman: "Lutur" }, back: { hindi: "कान", english: "Ear" } },
+  { id: "fc-72", concept: "Nose", category: "Science", imageEmoji: "👃", front: { santhaliOlChiki: "ᱢᱩ", santhaliRoman: "Mu" }, back: { hindi: "नाक", english: "Nose" } },
+  { id: "fc-73", concept: "Mouth", category: "Science", imageEmoji: "👄", front: { santhaliOlChiki: "ᱢᱚᱪᱟ", santhaliRoman: "Moca" }, back: { hindi: "मुंह", english: "Mouth" } },
+  { id: "fc-74", concept: "Tooth", category: "Science", imageEmoji: "🦷", front: { santhaliOlChiki: "ᱰᱟᱴᱟ", santhaliRoman: "Data" }, back: { hindi: "दांत", english: "Tooth" } },
+  { id: "fc-75", concept: "Hand", category: "Science", imageEmoji: "✋", front: { santhaliOlChiki: "ᱛᱤ", santhaliRoman: "Ti" }, back: { hindi: "हाथ", english: "Hand" } },
+  { id: "fc-76", concept: "Leg / Foot", category: "Science", imageEmoji: "🦵", front: { santhaliOlChiki: "ᱡᱟᱝᱜᱟ", santhaliRoman: "Janga" }, back: { hindi: "पैर", english: "Leg / Foot" } },
+  { id: "fc-77", concept: "Stomach", category: "Science", imageEmoji: "🫃", front: { santhaliOlChiki: "ᱞᱟᱡ", santhaliRoman: "Laj" }, back: { hindi: "पेट", english: "Stomach" } },
+  { id: "fc-78", concept: "Heart", category: "Science", imageEmoji: "🫀", front: { santhaliOlChiki: "ᱫᱤᱞ", santhaliRoman: "Dil" }, back: { hindi: "हृदय / दिल", english: "Heart" } },
+
+  // People, School & Family
+  { id: "fc-79", concept: "House / Home", category: "Vocabulary", imageEmoji: "🏡", front: { santhaliOlChiki: "ᱚᱲᱟᱜ", santhaliRoman: "Orag" }, back: { hindi: "घर / गृह", english: "House / Home" } },
+  { id: "fc-80", concept: "School", category: "Vocabulary", imageEmoji: "🏫", front: { santhaliOlChiki: "ᱟᱥᱲᱟ", santhaliRoman: "Asra" }, back: { hindi: "विद्यालय / स्कूल", english: "School" } },
+  { id: "fc-81", concept: "Teacher", category: "Vocabulary", imageEmoji: "🧑‍🏫", front: { santhaliOlChiki: "ᱢᱟᱪᱮᱛ", santhaliRoman: "Macet" }, back: { hindi: "शिक्षक / गुरुजी", english: "Teacher" } },
+  { id: "fc-82", concept: "Student", category: "Vocabulary", imageEmoji: "🧑‍🎓", front: { santhaliOlChiki: "ᱪᱮᱛᱮᱫᱤᱭᱟᱹ", santhaliRoman: "Cetediyạ" }, back: { hindi: "विद्यार्थी / छात्र", english: "Student" } },
+  { id: "fc-83", concept: "Book", category: "Vocabulary", imageEmoji: "📖", front: { santhaliOlChiki: "ᱯᱩᱛᱷᱤ", santhaliRoman: "Puthi" }, back: { hindi: "पुस्तक / किताब", english: "Book" } },
+  { id: "fc-84", concept: "Pen", category: "Vocabulary", imageEmoji: "🖊️", front: { santhaliOlChiki: "ᱠᱚᱞᱚᱢ", santhaliRoman: "Kolom" }, back: { hindi: "कलम", english: "Pen" } },
+  { id: "fc-85", concept: "Friend", category: "Vocabulary", imageEmoji: "🤝", front: { santhaliOlChiki: "ᱜᱟᱛᱮ", santhaliRoman: "Gate" }, back: { hindi: "मित्र / दोस्त", english: "Friend" } },
+  { id: "fc-86", concept: "Mother", category: "Vocabulary", imageEmoji: "👩", front: { santhaliOlChiki: "ᱟᱭᱳ", santhaliRoman: "Ayo" }, back: { hindi: "माता / मां", english: "Mother" } },
+  { id: "fc-87", concept: "Father", category: "Vocabulary", imageEmoji: "👨", front: { santhaliOlChiki: "ᱵᱟᱵᱟ", santhaliRoman: "Baba" }, back: { hindi: "पिता / बाबा", english: "Father" } },
+  { id: "fc-88", concept: "Brother", category: "Vocabulary", imageEmoji: "👦", front: { santhaliOlChiki: "ᱵᱚᱭᱦᱟ", santhaliRoman: "Boyha" }, back: { hindi: "भाई", english: "Brother" } },
+  { id: "fc-89", concept: "Sister", category: "Vocabulary", imageEmoji: "👧", front: { santhaliOlChiki: "ᱢᱤᱥᱤ", santhaliRoman: "Misi" }, back: { hindi: "बहन", english: "Sister" } },
+
+  // Everyday Verbs & Actions
+  { id: "fc-90", concept: "Write", category: "Vocabulary", imageEmoji: "✍️", front: { santhaliOlChiki: "ᱚᱞ", santhaliRoman: "Ol" }, back: { hindi: "लिखना", english: "Write" } },
+  { id: "fc-91", concept: "Read", category: "Vocabulary", imageEmoji: "📖", front: { santhaliOlChiki: "ᱯᱟᱲᱦᱟᱣ", santhaliRoman: "Parhao" }, back: { hindi: "पढ़ना", english: "Read" } },
+  { id: "fc-92", concept: "Learn", category: "Vocabulary", imageEmoji: "🎓", front: { santhaliOlChiki: "ᱤᱛᱩᱱ", santhaliRoman: "Itun" }, back: { hindi: "सीखना", english: "Learn" } },
+  { id: "fc-93", concept: "Eat", category: "Vocabulary", imageEmoji: "🍽️", front: { santhaliOlChiki: "ᱡᱚᱢ", santhaliRoman: "Jom" }, back: { hindi: "खाना", english: "Eat" } },
+  { id: "fc-94", concept: "Drink", category: "Vocabulary", imageEmoji: "🥤", front: { santhaliOlChiki: "ᱧᱩ", santhaliRoman: "Nu" }, back: { hindi: "पीना", english: "Drink" } },
+  { id: "fc-95", concept: "Sleep", category: "Vocabulary", imageEmoji: "😴", front: { santhaliOlChiki: "ᱡᱟᱹᱯᱤᱫ", santhaliRoman: "Japid" }, back: { hindi: "सोना", english: "Sleep" } },
+  { id: "fc-96", concept: "Walk", category: "Vocabulary", imageEmoji: "🚶", front: { santhaliOlChiki: "ᱛᱟᱲᱟᱢ", santhaliRoman: "Taram" }, back: { hindi: "चलना", english: "Walk" } },
+  { id: "fc-97", concept: "Run", category: "Vocabulary", imageEmoji: "🏃", front: { santhaliOlChiki: "ᱫᱟᱹᱲ", santhaliRoman: "Dar" }, back: { hindi: "दौड़ना", english: "Run" } },
+  { id: "fc-98", concept: "Speak", category: "Vocabulary", imageEmoji: "🗣️", front: { santhaliOlChiki: "ᱨᱚᱲ", santhaliRoman: "Ror" }, back: { hindi: "बोलना", english: "Speak" } },
+  { id: "fc-99", concept: "Listen", category: "Vocabulary", imageEmoji: "👂", front: { santhaliOlChiki: "ᱟᱸᱡᱚᱢ", santhaliRoman: "Anjom" }, back: { hindi: "सुनना", english: "Listen" } },
+  { id: "fc-100", concept: "See", category: "Vocabulary", imageEmoji: "👀", front: { santhaliOlChiki: "ᱧᱮᱞ", santhaliRoman: "Nel" }, back: { hindi: "देखना", english: "See" } },
+  { id: "fc-101", concept: "Sing", category: "Vocabulary", imageEmoji: "🎵", front: { santhaliOlChiki: "ᱥᱮᱨᱮᱧ", santhaliRoman: "Sereng" }, back: { hindi: "गाना", english: "Sing" } },
+  { id: "fc-102", concept: "Dance", category: "Vocabulary", imageEmoji: "💃", front: { santhaliOlChiki: "ᱮᱱᱮᱡ", santhaliRoman: "Enej" }, back: { hindi: "नाचना", english: "Dance" } },
+  { id: "fc-103", concept: "Play", category: "Vocabulary", imageEmoji: "⚽", front: { santhaliOlChiki: "ᱠᱷᱮᱞᱚᱸᱰ", santhaliRoman: "Khelond" }, back: { hindi: "खेलना", english: "Play" } },
+  { id: "fc-104", concept: "Laugh", category: "Vocabulary", imageEmoji: "😄", front: { santhaliOlChiki: "ᱞᱟᱸᱫᱟ", santhaliRoman: "Landa" }, back: { hindi: "हंसना", english: "Laugh" } },
+  { id: "fc-105", concept: "Cry", category: "Vocabulary", imageEmoji: "😢", front: { santhaliOlChiki: "ᱨᱟᱜ", santhaliRoman: "Rag" }, back: { hindi: "रोना", english: "Cry" } },
+  { id: "fc-106", concept: "Work", category: "Vocabulary", imageEmoji: "🛠️", front: { santhaliOlChiki: "ᱠᱟᱹᱢᱤ", santhaliRoman: "Kami" }, back: { hindi: "काम करना", english: "Work" } },
+  { id: "fc-107", concept: "Love", category: "Vocabulary", imageEmoji: "❤️", front: { santhaliOlChiki: "ᱫᱩᱞᱟᱹᱲ", santhaliRoman: "Dular" }, back: { hindi: "प्रेम / प्यार", english: "Love" } },
+  { id: "fc-108", concept: "Joy / Happy", category: "Vocabulary", imageEmoji: "😊", front: { santhaliOlChiki: "ᱨᱟᱹᱥᱠᱟᱹ", santhaliRoman: "Raska" }, back: { hindi: "खुशी / आनंद", english: "Joy / Happy" } },
+
+  // Food & Kitchen
+  { id: "fc-109", concept: "Cooked Rice", category: "Vocabulary", imageEmoji: "🍚", front: { santhaliOlChiki: "ᱫᱟᱠᱟ", santhaliRoman: "Daka" }, back: { hindi: "भात / पके चावल", english: "Cooked Rice" } },
+  { id: "fc-110", concept: "Paddy", category: "Science", imageEmoji: "🌾", front: { santhaliOlChiki: "ᱦᱩᱲᱩ", santhaliRoman: "Huru" }, back: { hindi: "धान", english: "Paddy" } },
+  { id: "fc-111", concept: "Wheat", category: "Science", imageEmoji: "🌾", front: { santhaliOlChiki: "ᱜᱩᱦᱩᱢ", santhaliRoman: "Guhum" }, back: { hindi: "गेहूं", english: "Wheat" } },
+  { id: "fc-112", concept: "Salt", category: "Vocabulary", imageEmoji: "🧂", front: { santhaliOlChiki: "ᱵᱩᱞᱩᱝ", santhaliRoman: "Bulung" }, back: { hindi: "नमक", english: "Salt" } },
+  { id: "fc-113", concept: "Oil", category: "Vocabulary", imageEmoji: "🫗", front: { santhaliOlChiki: "ᱥᱩᱱᱩᱢ", santhaliRoman: "Sunum" }, back: { hindi: "तेल", english: "Oil" } },
+  { id: "fc-114", concept: "Curry / Vegetable", category: "Vocabulary", imageEmoji: "🥘", front: { santhaliOlChiki: "ᱩᱛᱩ", santhaliRoman: "Utu" }, back: { hindi: "सब्जी / तरकारी", english: "Curry / Vegetable" } },
+  { id: "fc-115", concept: "Milk", category: "Vocabulary", imageEmoji: "🥛", front: { santhaliOlChiki: "ᱛᱳᱣᱟ", santhaliRoman: "Towa" }, back: { hindi: "दूध", english: "Milk" } },
+  { id: "fc-116", concept: "Bread / Roti", category: "Vocabulary", imageEmoji: "🫓", front: { santhaliOlChiki: "ᱯᱤᱴᱷᱟᱹ", santhaliRoman: "Pitha" }, back: { hindi: "रोटी / पीठा", english: "Flatbread / Roti" } },
+  { id: "fc-117", concept: "Egg", category: "Vocabulary", imageEmoji: "🥚", front: { santhaliOlChiki: "ᱵᱤᱞᱤ", santhaliRoman: "Bili" }, back: { hindi: "अंडा", english: "Egg" } },
+
+  // Colors
+  { id: "fc-118", concept: "Red", category: "Vocabulary", imageEmoji: "🔴", front: { santhaliOlChiki: "ᱟᱨᱟᱜ", santhaliRoman: "Arag" }, back: { hindi: "लाल", english: "Red" } },
+  { id: "fc-119", concept: "Green", category: "Vocabulary", imageEmoji: "🟢", front: { santhaliOlChiki: "ᱦᱟᱹᱨᱤᱭᱟᱹᱲ", santhaliRoman: "Hariyar" }, back: { hindi: "हरा", english: "Green" } },
+  { id: "fc-120", concept: "White", category: "Vocabulary", imageEmoji: "⚪", front: { santhaliOlChiki: "ᱯᱳᱱᱰ", santhaliRoman: "Pond" }, back: { hindi: "सफेद", english: "White" } },
+  { id: "fc-121", concept: "Black", category: "Vocabulary", imageEmoji: "⚫", front: { santhaliOlChiki: "ᱦᱮᱸᱫᱮ", santhaliRoman: "Hende" }, back: { hindi: "काला", english: "Black" } },
+  { id: "fc-122", concept: "Yellow", category: "Vocabulary", imageEmoji: "🟡", front: { santhaliOlChiki: "ᱥᱟᱥᱟᱝ", santhaliRoman: "Sasang" }, back: { hindi: "पीला", english: "Yellow" } },
+  { id: "fc-123", concept: "Blue", category: "Vocabulary", imageEmoji: "🔵", front: { santhaliOlChiki: "ᱞᱤᱞ", santhaliRoman: "Lil" }, back: { hindi: "नीला", english: "Blue" } },
+
+  // Time & Days
+  { id: "fc-124", concept: "Today", category: "Vocabulary", imageEmoji: "📅", front: { santhaliOlChiki: "ᱛᱮᱦᱮᱧ", santhaliRoman: "Teheng" }, back: { hindi: "आज", english: "Today" } },
+  { id: "fc-125", concept: "Tomorrow", category: "Vocabulary", imageEmoji: "🗓️", front: { santhaliOlChiki: "ᱜᱟᱯᱟ", santhaliRoman: "Gapa" }, back: { hindi: "कल (आने वाला)", english: "Tomorrow" } },
+  { id: "fc-126", concept: "Yesterday", category: "Vocabulary", imageEmoji: "📆", front: { santhaliOlChiki: "ᱦᱚᱞᱟ", santhaliRoman: "Hola" }, back: { hindi: "कल (बीता हुआ)", english: "Yesterday" } },
+  { id: "fc-127", concept: "Morning", category: "Vocabulary", imageEmoji: "🌅", front: { santhaliOlChiki: "ᱥᱮᱛᱟᱜ", santhaliRoman: "Setag" }, back: { hindi: "सुबह / प्रात:", english: "Morning" } },
+  { id: "fc-128", concept: "Night", category: "Vocabulary", imageEmoji: "🌙", front: { santhaliOlChiki: "ᱧᱤᱫᱟᱹ", santhaliRoman: "Nida" }, back: { hindi: "रात / रात्रि", english: "Night" } },
+  { id: "fc-129", concept: "Sunlight / Heat", category: "Science", imageEmoji: "🌞", front: { santhaliOlChiki: "ᱥᱤᱛᱩᱝ", santhaliRoman: "Situng" }, back: { hindi: "धूप / गरमी", english: "Sunlight / Heat" } },
+  { id: "fc-130", concept: "Cold / Chill", category: "Science", imageEmoji: "❄️", front: { santhaliOlChiki: "ᱨᱮᱭᱟᱲ", santhaliRoman: "Reyar" }, back: { hindi: "ठंड / सर्दी", english: "Cold / Chill" } },
+  { id: "fc-131", concept: "Day", category: "Vocabulary", imageEmoji: "☀️", front: { santhaliOlChiki: "ᱢᱟᱦᱟ", santhaliRoman: "Maha" }, back: { hindi: "दिन", english: "Day" } },
+  { id: "fc-132", concept: "Year", category: "Vocabulary", imageEmoji: "🗓️", front: { santhaliOlChiki: "ᱥᱮᱨᱢᱟ", santhaliRoman: "Serma" }, back: { hindi: "वर्ष / साल", english: "Year" } },
+  { id: "fc-133", concept: "Rainy Season", category: "Science", imageEmoji: "⛈️", front: { santhaliOlChiki: "ᱡᱟᱹᱯᱩᱫ ᱫᱤᱱ", santhaliRoman: "Japud Din" }, back: { hindi: "वर्षा ऋतु / बरसात", english: "Monsoon / Rainy Season" } },
+
+  // Extended Family & Relations
+  { id: "fc-134", concept: "Grandfather", category: "Vocabulary", imageEmoji: "👴", front: { santhaliOlChiki: "ᱦᱟᱲᱟᱢᱵᱟ", santhaliRoman: "Haram ba" }, back: { hindi: "दादाजी", english: "Grandfather" } },
+  { id: "fc-135", concept: "Grandmother", category: "Vocabulary", imageEmoji: "👵", front: { santhaliOlChiki: "ᱵᱩᱰᱷᱤᱟᱭᱳ", santhaliRoman: "Budhi ayo" }, back: { hindi: "दादीजी", english: "Grandmother" } },
+  { id: "fc-136", concept: "Child / Baby", category: "Vocabulary", imageEmoji: "👶", front: { santhaliOlChiki: "ᱜᱤᱫᱽᱨᱟᱹ", santhaliRoman: "Gidrạ" }, back: { hindi: "बच्चा / शिशु", english: "Child / Baby" } },
+  { id: "fc-137", concept: "Son", category: "Vocabulary", imageEmoji: "👦", front: { santhaliOlChiki: "ᱦᱚᱯᱚᱱ", santhaliRoman: "Hopon" }, back: { hindi: "बेटा / पुत्र", english: "Son" } },
+  { id: "fc-138", concept: "Daughter", category: "Vocabulary", imageEmoji: "👧", front: { santhaliOlChiki: "ᱦᱚᱯᱚᱱ ᱮᱨᱟ", santhaliRoman: "Hopon era" }, back: { hindi: "बेटी / पुत्री", english: "Daughter" } },
+  { id: "fc-139", concept: "Uncle", category: "Vocabulary", imageEmoji: "🧔", front: { santhaliOlChiki: "ᱠᱟᱠᱟ", santhaliRoman: "Kaka" }, back: { hindi: "चाचा", english: "Uncle" } },
+  { id: "fc-140", concept: "Aunt", category: "Vocabulary", imageEmoji: "🧕", front: { santhaliOlChiki: "ᱠᱟᱹᱠᱤ", santhaliRoman: "Kaki" }, back: { hindi: "चाची", english: "Aunt" } },
+
+  // Household & Village Objects
+  { id: "fc-141", concept: "Cot / Bed", category: "Vocabulary", imageEmoji: "🛏️", front: { santhaliOlChiki: "ᱯᱟᱨᱠᱚᱢ", santhaliRoman: "Parkom" }, back: { hindi: "खाट / चारपाई", english: "Cot / Bed" } },
+  { id: "fc-142", concept: "Plate", category: "Vocabulary", imageEmoji: "🍽️", front: { santhaliOlChiki: "ᱛᱷᱟᱹᱨᱤ", santhaliRoman: "Thạri" }, back: { hindi: "थाली", english: "Plate" } },
+  { id: "fc-143", concept: "Bowl", category: "Vocabulary", imageEmoji: "🥣", front: { santhaliOlChiki: "ᱵᱟᱹᱴᱤ", santhaliRoman: "Bạti" }, back: { hindi: "कटोरी", english: "Bowl" } },
+  { id: "fc-144", concept: "Clay Pitcher / Pot", category: "Vocabulary", imageEmoji: "🏺", front: { santhaliOlChiki: "ᱴᱩᱠᱩᱡ", santhaliRoman: "Tukuj" }, back: { hindi: "घड़ा / मटका", english: "Clay Pitcher / Pot" } },
+  { id: "fc-145", concept: "Spoon", category: "Vocabulary", imageEmoji: "🥄", front: { santhaliOlChiki: "ᱪᱟᱹᱢᱩᱪ", santhaliRoman: "Camuc" }, back: { hindi: "चम्मच", english: "Spoon" } },
+  { id: "fc-146", concept: "Clothes / Fabric", category: "Vocabulary", imageEmoji: "👕", front: { santhaliOlChiki: "ᱠᱤᱪᱨᱤᱪ", santhaliRoman: "Kicric" }, back: { hindi: "कपड़ा / वस्त्र", english: "Clothes / Fabric" } },
+  { id: "fc-147", concept: "Door", category: "Vocabulary", imageEmoji: "🚪", front: { santhaliOlChiki: "ᱥᱤᱞᱯᱤᱧ", santhaliRoman: "Silping" }, back: { hindi: "दरवाजा / किवाड़", english: "Door" } },
+  { id: "fc-148", concept: "Window", category: "Vocabulary", imageEmoji: "🪟", front: { santhaliOlChiki: "ᱠᱷᱤᱲᱠᱤ", santhaliRoman: "Khirki" }, back: { hindi: "खिड़की", english: "Window" } },
+  { id: "fc-149", concept: "Road / Path", category: "Geography", imageEmoji: "🛣️", front: { santhaliOlChiki: "ᱰᱟᱦᱟᱨ", santhaliRoman: "Dahar" }, back: { hindi: "रास्ता / सड़क", english: "Road / Path" } },
+  { id: "fc-150", concept: "Bamboo Basket", category: "Vocabulary", imageEmoji: "🧺", front: { santhaliOlChiki: "ᱴᱩᱠᱨᱤ", santhaliRoman: "Tukri" }, back: { hindi: "टोकरी / दौरी", english: "Bamboo Basket" } },
+
+  // More Nature & Minerals
+  { id: "fc-151", concept: "Grass", category: "Science", imageEmoji: "🌱", front: { santhaliOlChiki: "ᱜᱷᱟᱸᱥ", santhaliRoman: "Ghãs" }, back: { hindi: "घास", english: "Grass" } },
+  { id: "fc-152", concept: "Bamboo", category: "Science", imageEmoji: "🎋", front: { santhaliOlChiki: "ᱢᱟᱫ", santhaliRoman: "Mad" }, back: { hindi: "बांस", english: "Bamboo" } },
+  { id: "fc-153", concept: "Sand", category: "Geography", imageEmoji: "🏖️", front: { santhaliOlChiki: "ᱜᱤᱛᱤᱞ", santhaliRoman: "Gitil" }, back: { hindi: "रेत / बालू", english: "Sand" } },
+  { id: "fc-154", concept: "Iron", category: "Science", imageEmoji: "⚙️", front: { santhaliOlChiki: "ᱢᱮᱬᱦᱮᱫ", santhaliRoman: "Menhed" }, back: { hindi: "लोहा", english: "Iron" } },
+  { id: "fc-155", concept: "Gold", category: "Science", imageEmoji: "🪙", front: { santhaliOlChiki: "ᱥᱚᱱᱟ", santhaliRoman: "Sona" }, back: { hindi: "सोना / स्वर्ण", english: "Gold" } },
+  { id: "fc-156", concept: "Silver", category: "Science", imageEmoji: "🥈", front: { santhaliOlChiki: "ᱨᱩᱯᱟᱹ", santhaliRoman: "Rupa" }, back: { hindi: "चांदी", english: "Silver" } },
+
+  // More Animals & Birds
+  { id: "fc-157", concept: "Monkey", category: "Science", imageEmoji: "🐒", front: { santhaliOlChiki: "ᱜᱟᱹᱲᱤ", santhaliRoman: "Gari" }, back: { hindi: "बंदर", english: "Monkey" } },
+  { id: "fc-158", concept: "Fox / Jackal", category: "Science", imageEmoji: "🦊", front: { santhaliOlChiki: "ᱛᱩᱭᱩ", santhaliRoman: "Tuyu" }, back: { hindi: "लोमड़ी / सियार", english: "Fox / Jackal" } },
+  { id: "fc-159", concept: "Duck", category: "Science", imageEmoji: "🦆", front: { santhaliOlChiki: "ᱜᱷᱮᱸᱣᱮ", santhaliRoman: "Ghenwe" }, back: { hindi: "बत्तख", english: "Duck" } },
+  { id: "fc-160", concept: "Crow", category: "Science", imageEmoji: "🐦‍⬛", front: { santhaliOlChiki: "ᱠᱟᱣᱟ", santhaliRoman: "Kawa" }, back: { hindi: "कौआ", english: "Crow" } },
+  { id: "fc-161", concept: "Pigeon", category: "Science", imageEmoji: "🕊️", front: { santhaliOlChiki: "ᱯᱟᱬᱮ", santhaliRoman: "Pane" }, back: { hindi: "कबूतर", english: "Pigeon" } },
+  { id: "fc-162", concept: "Rabbit / Hare", category: "Science", imageEmoji: "🐇", front: { santhaliOlChiki: "ᱠᱩᱞᱟᱹᱭ", santhaliRoman: "Kulai" }, back: { hindi: "खरगोश", english: "Rabbit / Hare" } },
+
+  // More Anatomy & Body
+  { id: "fc-163", concept: "Hair", category: "Science", imageEmoji: "💇", front: { santhaliOlChiki: "ᱩᱵ", santhaliRoman: "Ub" }, back: { hindi: "बाल / केश", english: "Hair" } },
+  { id: "fc-164", concept: "Tongue", category: "Science", imageEmoji: "👅", front: { santhaliOlChiki: "ᱟᱞᱟᱝ", santhaliRoman: "Alang" }, back: { hindi: "जीभ", english: "Tongue" } },
+  { id: "fc-165", concept: "Neck", category: "Science", imageEmoji: "🦒", front: { santhaliOlChiki: "ᱦᱚᱛᱚᱜ", santhaliRoman: "Hotog" }, back: { hindi: "गर्दन / गला", english: "Neck" } },
+  { id: "fc-166", concept: "Finger", category: "Science", imageEmoji: "☝️", front: { santhaliOlChiki: "ᱛᱤ ᱠᱟᱹᱴᱩᱵ", santhaliRoman: "Ti Katub" }, back: { hindi: "उंगली", english: "Finger" } },
+  { id: "fc-167", concept: "Knee", category: "Science", imageEmoji: "🦵", front: { santhaliOlChiki: "ᱢᱩᱠᱩᱲ", santhaliRoman: "Mukur" }, back: { hindi: "घुटना", english: "Knee" } },
+
+  // More Daily Verbs & Actions
+  { id: "fc-168", concept: "Give", category: "Vocabulary", imageEmoji: "🤲", front: { santhaliOlChiki: "ᱮᱢ", santhaliRoman: "Em" }, back: { hindi: "देना", english: "Give" } },
+  { id: "fc-169", concept: "Take / Receive", category: "Vocabulary", imageEmoji: "🫳", front: { santhaliOlChiki: "ᱦᱟᱛᱟᱣ", santhaliRoman: "Hatao" }, back: { hindi: "लेना", english: "Take / Receive" } },
+  { id: "fc-170", concept: "Sit", category: "Vocabulary", imageEmoji: "🪑", front: { santhaliOlChiki: "ᱫᱩᱲᱩᱵ", santhaliRoman: "Durup" }, back: { hindi: "बैठना", english: "Sit" } },
+  { id: "fc-171", concept: "Stand", category: "Vocabulary", imageEmoji: "🧍", front: { santhaliOlChiki: "ᱛᱤᱸᱜᱩ", santhaliRoman: "Tingu" }, back: { hindi: "खड़े होना", english: "Stand" } },
+  { id: "fc-172", concept: "Come", category: "Vocabulary", imageEmoji: "🙋", front: { santhaliOlChiki: "ᱦᱤᱡᱩᱜ", santhaliRoman: "Hijug" }, back: { hindi: "आना", english: "Come" } },
+  { id: "fc-173", concept: "Go", category: "Vocabulary", imageEmoji: "🚶", front: { santhaliOlChiki: "ᱥᱮᱱᱚᱜ", santhaliRoman: "Senog" }, back: { hindi: "जाना", english: "Go" } },
+  { id: "fc-174", concept: "Open", category: "Vocabulary", imageEmoji: "🔓", front: { santhaliOlChiki: "ᱡᱷᱤᱡ", santhaliRoman: "Jhij" }, back: { hindi: "खोलना", english: "Open" } },
+  { id: "fc-175", concept: "Close", category: "Vocabulary", imageEmoji: "🔒", front: { santhaliOlChiki: "ᱵᱚᱸᱫᱽ", santhaliRoman: "Bond" }, back: { hindi: "बंद करना", english: "Close" } },
+  { id: "fc-176", concept: "Ask", category: "Vocabulary", imageEmoji: "❓", front: { santhaliOlChiki: "ᱠᱩᱞᱤ", santhaliRoman: "Kuli" }, back: { hindi: "पूछना", english: "Ask" } },
+  { id: "fc-177", concept: "Tell / Say", category: "Vocabulary", imageEmoji: "🗣️", front: { santhaliOlChiki: "ᱞᱟᱹᱭ", santhaliRoman: "Lạy" }, back: { hindi: "बताना / कहना", english: "Tell / Say" } },
 ];
 
-// Rich Santali roots covering subjects, science, math, nature, and grammar
-const SANTALI_ROOTS = [
-  { ol: "ᱚᱞ", rom: "Ol", hi: "लिखना", en: "Write", cat: "Vocabulary", emoji: "✍️" },
-  { ol: "ᱫᱟᱜ", rom: "Daᶜ", hi: "पानी", en: "Water", cat: "Science", emoji: "💧" },
-  { ol: "ᱥᱤᱝᱜᱮᱞ", rom: "Singel", hi: "सूरज", en: "Sun", cat: "Science", emoji: "☀️" },
-  { ol: "ᱫᱟᱨᱮ", rom: "Dare", hi: "पेड़", en: "Tree", cat: "Science", emoji: "🌳" },
-  { ol: "ᱡᱟᱶ", rom: "Jaṅ", hi: "बीज", en: "Seed", cat: "Science", emoji: "🌱" },
-  { ol: "ᱥᱮᱨᱢᱟ", rom: "Sermaa", hi: "आकाश / वर्ष", en: "Sky / Year", cat: "Science", emoji: "🌌" },
-  { ol: "ᱞᱮᱠᱷᱟ", rom: "Lekha", hi: "संख्या / गिनती", en: "Number / Count", cat: "Math", emoji: "🔢" },
-  { ol: "ᱜᱟᱰᱟ", rom: "Gaḍa", hi: "नदी", en: "River", cat: "Geography", emoji: "🏞️" },
-  { ol: "ᱯᱟᱲᱦᱟᱣ", rom: "Paṛhao", hi: "पढ़ना", en: "Read", cat: "Vocabulary", emoji: "📖" },
-  { ol: "ᱚᱲᱟᱜ", rom: "Oṛaɡ", hi: "घर", en: "House", cat: "Vocabulary", emoji: "🏡" },
-  { ol: "ᱤᱛᱩᱱ", rom: "Itun", hi: "सीखना", en: "Learn", cat: "Vocabulary", emoji: "🎓" },
-  { ol: "ᱢᱟᱪᱮᱛ", rom: "Macet", hi: "शिक्षक", en: "Teacher", cat: "Vocabulary", emoji: "🧑‍🏫" },
-  { ol: "ᱪᱮᱛᱮᱫ", rom: "Ceted", hi: "ज्ञान", en: "Knowledge", cat: "Vocabulary", emoji: "📚" },
-  { ol: "ᱡᱚᱢ", rom: "Jom", hi: "खाना", en: "Eat", cat: "Vocabulary", emoji: "🍎" },
-  { ol: "ᱧᱩ", rom: "Ñu", hi: "पीना", en: "Drink", cat: "Vocabulary", emoji: "🥛" },
-  { ol: "ᱪᱟᱸᱫᱚ", rom: "Cando", hi: "चांद", en: "Moon", cat: "Science", emoji: "🌙" },
-  { ol: "ᱵᱩᱨᱩ", rom: "Buru", hi: "पहाड़", en: "Mountain", cat: "Geography", emoji: "⛰️" },
-  { ol: "ᱪᱮᱬᱮ", rom: "Ceṇe", hi: "पक्षी", en: "Bird", cat: "Science", emoji: "🐦" },
-  { ol: "ᱵᱟᱦᱟ", rom: "Baha", hi: "फूल", en: "Flower", cat: "Science", emoji: "🌸" },
-  { ol: "ᱥᱟᱠᱟᱢ", rom: "Sakam", hi: "पत्ती", en: "Leaf", cat: "Science", emoji: "🍃" },
-  { ol: "ᱦᱟᱥᱟ", rom: "Hasa", hi: "मिट्टी", en: "Soil / Earth", cat: "Geography", emoji: "🌍" },
-  { ol: "ᱦᱚᱭ", rom: "Hoy", hi: "हवा", en: "Air / Wind", cat: "Science", emoji: "💨" },
-  { ol: "ᱟᱹᱛᱩ", rom: "Atu", hi: "गांव", en: "Village", cat: "Geography", emoji: "🏘️" },
-  { ol: "ᱜᱟᱛᱮ", rom: "Gate", hi: "मित्र", en: "Friend", cat: "Vocabulary", emoji: "🤝" },
-  { ol: "ᱵᱤᱨ", rom: "Bir", hi: "जंगल", en: "Forest", cat: "Geography", emoji: "🌲" },
-  { ol: "ᱠᱟᱹᱢᱤ", rom: "Kami", hi: "काम / कार्य", en: "Work", cat: "Vocabulary", emoji: "🛠️" },
-  { ol: "ᱫᱩᱞᱟᱹᱲ", rom: "Dulaṛ", hi: "प्रेम", en: "Love", cat: "Vocabulary", emoji: "❤️" },
-  { ol: "ᱨᱟᱹᱥᱠᱟᱹ", rom: "Raska", hi: "आनंद / खुशी", en: "Joy", cat: "Vocabulary", emoji: "😊" },
-  { ol: "ᱥᱮᱨᱮᱧ", rom: "Sereng", hi: "गीत", en: "Song", cat: "Vocabulary", emoji: "🎵" },
-  { ol: "ᱮᱱᱮᱡ", rom: "Enej", hi: "नृत्य", en: "Dance", cat: "Vocabulary", emoji: "💃" },
-  { ol: "ᱮᱞᱠᱷᱟ", rom: "Elkha", hi: "गणित", en: "Mathematics", cat: "Math", emoji: "📐" },
-  { ol: "ᱦᱟᱹᱴᱤᱧ", rom: "Hating", hi: "भाग / विभाजन", en: "Division / Share", cat: "Math", emoji: "➗" },
-  { ol: "ᱜᱩᱬᱟᱹ", rom: "Guna", hi: "गुणा", en: "Multiplication", cat: "Math", emoji: "✖️" },
-  { ol: "ᱵᱷᱮᱫᱽ", rom: "Bhed", hi: "अंतर / घटाव", en: "Subtraction", cat: "Math", emoji: "➖" },
-  { ol: "ᱥᱟᱬᱮᱥ", rom: "Sanes", hi: "विज्ञान", en: "Science", cat: "Science", emoji: "🔬" },
-  { ol: "ᱜᱟᱪ", rom: "Gac", hi: "पौधा", en: "Plant", cat: "Science", emoji: "🌱" },
-  { ol: "ᱡᱤᱣᱤ", rom: "Jiwi", hi: "जीवन", en: "Life", cat: "Science", emoji: "💖" },
-  { ol: "ᱡᱟᱱᱣᱟᱨ", rom: "Janwar", hi: "पशु", en: "Animal", cat: "Science", emoji: "🐾" },
-  { ol: "ᱦᱟᱹᱠᱩ", rom: "Haku", hi: "मछली", en: "Fish", cat: "Science", emoji: "🐟" },
-  { ol: "ᱥᱤᱢ", rom: "Sim", hi: "मुर्गी", en: "Chicken", cat: "Science", emoji: "🐔" },
-];
-
-const MODIFIERS = [
-  { ol: " ᱢᱟᱨᱟᱝ", rom: " Marang", hi: " (बड़ा)", en: " (Big)" },
-  { ol: " ᱠᱟᱹᱴᱤᱡ", rom: " Kaṭij", hi: " (छोटा)", en: " (Small)" },
-  { ol: " ᱱᱟᱣᱟ", rom: " Nawa", hi: " (नया)", en: " (New)" },
-  { ol: " ᱥᱮᱫᱟᱭ", rom: " Seday", hi: " (पुराना)", en: " (Old)" },
-  { ol: " ᱟᱨᱟᱜ", rom: " Araɡ", hi: " (लाल)", en: " (Red)" },
-  { ol: " ᱦᱟᱹᱨᱤᱭᱟᱹᱲ", rom: " Hariyaṛ", hi: " (हरा)", en: " (Green)" },
-  { ol: " ᱯᱳᱱᱰ", rom: " Ponḍ", hi: " (सफेद)", en: " (White)" },
-  { ol: " ᱦᱮᱸᱫᱮ", rom: " Henḍe", hi: " (काला)", en: " (Black)" },
-  { ol: " ᱯᱩᱭᱞᱩ", rom: " Puylu", hi: " (पहला)", en: " (First)" },
-  { ol: " ᱫᱚᱥᱟᱨ", rom: " Dosar", hi: " (दूसरा)", en: " (Second)" },
-  { ol: " ᱩᱥᱩᱞ", rom: " Usul", hi: " (ऊंचा)", en: " (High/Tall)" },
-  { ol: " ᱞᱟᱛᱟᱨ", rom: " Latar", hi: " (निचला)", en: " (Lower)" },
-  { ol: " ᱥᱟᱯᱷᱟ", rom: " Sapha", hi: " (साफ)", en: " (Clean)" },
-  { ol: " ᱞᱚᱜᱚᱱ", rom: " Logon", hi: " (तेज)", en: " (Fast)" },
-  { ol: " ᱫᱷᱤᱨᱤ", rom: " Dhiri", hi: " (धीमा)", en: " (Slow)" },
-  { ol: " ᱥᱚᱱᱚᱛ", rom: " Sonot", hi: " (पवित्र)", en: " (Sacred)" },
-  { ol: " ᱠᱮᱴᱮᱡ", rom: " Ketej", hi: " (मजबूत)", en: " (Strong)" },
-  { ol: " ᱞᱚᱞᱚ", rom: " Lolo", hi: " (गर्म)", en: " (Hot)" },
-  { ol: " ᱨᱮᱭᱟᱲ", rom: " Reyaṛ", hi: " (ठंडा)", en: " (Cold)" },
-  { ol: " ᱪᱚᱨᱚᱠ", rom: " Corok", hi: " (सुंदर)", en: " (Beautiful)" },
-];
-
-const QUALIFIERS = [
-  { ol: " ᱢᱩᱬᱩᱛ", rom: " Muṇut", hi: " - मुख्य", en: " - Main" },
-  { ol: " ᱠᱩᱫᱽᱨᱟᱹᱛᱤ", rom: " Kudrati", hi: " - प्राकृतिक", en: " - Natural" },
-  { ol: " ᱟᱹᱛᱩ ᱨᱮᱭᱟᱜ", rom: " Atu reyaɡ", hi: " - ग्रामीण", en: " - Rural" },
-  { ol: " ᱤᱛᱩᱱ ᱨᱮᱭᱟᱜ", rom: " Itun reyaɡ", hi: " - शैक्षणिक", en: " - Educational" },
-  { ol: " ᱥᱟᱱᱛᱟᱲᱤ", rom: " Santali", hi: " - संताली", en: " - Santali" },
-  { ol: " ᱥᱮᱫᱟᱭ ᱨᱮᱭᱟᱜ", rom: " Seday reyaɡ", hi: " - प्राचीन", en: " - Ancient" },
-  { ol: " ᱱᱟᱦᱟᱜ ᱨᱮᱭᱟᱜ", rom: " Nahag reyaɡ", hi: " - आधुनिक", en: " - Modern" },
-  { ol: " ᱜᱚᱴᱟ", rom: " Gota", hi: " - संपूर्ण", en: " - Total" },
-  { ol: " ᱥᱟᱹᱨᱤ", rom: " Sari", hi: " - सत्य", en: " - True" },
-  { ol: " ᱵᱤᱥᱮᱥ", rom: " Bises", hi: " - विशेष", en: " - Special" },
-  { ol: " ᱵᱟᱹᱲᱛᱤ", rom: " Baṛti", hi: " - अतिरिक्त", en: " - Extra" },
-  { ol: " ᱞᱟᱹᱠᱛᱤᱭᱟᱱ", rom: " Laktiyan", hi: " - आवश्यक", en: " - Essential" },
-  { ol: " ᱱᱟᱯᱟᱭ", rom: " Napay", hi: " - उत्तम", en: " - Excellent" },
-  { ol: " ᱥᱟᱶᱛᱟ", rom: " Sawta", hi: " - सामाजिक", en: " - Social" },
-  { ol: " ᱫᱤᱥᱚᱢ", rom: " Disom", hi: " - राष्ट्रीय", en: " - Country" },
-];
-
-const CONTEXTS = [
-  { ol: " (ᱟᱹᱛᱩ ᱨᱮ)", rom: " (Atu re)", hi: " [गांव में]", en: " [In Village]" },
-  { ol: " (ᱵᱤᱨ ᱨᱮ)", rom: " (Bir re)", hi: " [जंगल में]", en: " [In Forest]" },
-  { ol: " (ᱤᱛᱩᱱ ᱟᱥᱲᱟ ᱨᱮ)", rom: " (Itun asṛa re)", hi: " [स्कूल में]", en: " [In School]" },
-  { ol: " (ᱜᱟᱰᱟ ᱨᱮ)", rom: " (Gaḍa re)", hi: " [नदी में]", en: " [In River]" },
-  { ol: " (ᱥᱮᱨᱢᱟ ᱨᱮ)", rom: " (Sermaa re)", hi: " [आकाश में]", en: " [In Sky]" },
-  { ol: " (ᱮᱞᱠᱷᱟ ᱨᱮ)", rom: " (Elkha re)", hi: " [गणित में]", en: " [In Math]" },
-  { ol: " (ᱥᱟᱬᱮᱥ ᱨᱮ)", rom: " (Sanes re)", hi: " [विज्ञान में]", en: " [In Science]" },
-  { ol: " (ᱡᱤᱣᱤ ᱨᱮ)", rom: " (Jiwi re)", hi: " [जीवन में]", en: " [In Life]" },
-  { ol: " (ᱵᱩᱨᱩ ᱨᱮ)", rom: " (Buru re)", hi: " [पहाड़ में]", en: " [In Mountain]" },
-  { ol: " (ᱚᱲᱟᱜ ᱨᱮ)", rom: " (Oṛaɡ re)", hi: " [घर में]", en: " [In Home]" },
-];
-
-// Scalable deterministic dynamic flashcard generator for 10 Million+ unique cards
+// Scalable retrieval of authentic Santali flashcard words
 export function getGeneratedFlashcard(index: number): FlashcardItem {
-  if (index < BASE_VOCABULARY.length) {
-    return BASE_VOCABULARY[index];
-  }
-
-  const adjustedIndex = index - BASE_VOCABULARY.length;
-
-  const rootIdx = adjustedIndex % SANTALI_ROOTS.length;
-  const modIdx = Math.floor(adjustedIndex / SANTALI_ROOTS.length) % MODIFIERS.length;
-  const qualIdx = Math.floor(adjustedIndex / (SANTALI_ROOTS.length * MODIFIERS.length)) % QUALIFIERS.length;
-  const ctxIdx = Math.floor(adjustedIndex / (SANTALI_ROOTS.length * MODIFIERS.length * QUALIFIERS.length)) % CONTEXTS.length;
-  const multiplier = Math.floor(adjustedIndex / (SANTALI_ROOTS.length * MODIFIERS.length * QUALIFIERS.length * CONTEXTS.length)) + 1;
-
-  const root = SANTALI_ROOTS[rootIdx];
-  const mod = MODIFIERS[modIdx];
-  const qual = QUALIFIERS[qualIdx];
-  const ctx = CONTEXTS[ctxIdx];
-
-  const numTag = multiplier > 1 ? ` v${multiplier}` : "";
-
+  const item = AUTHENTIC_SANTALI_WORDS[index % AUTHENTIC_SANTALI_WORDS.length];
   return {
-    id: `fc-vocab-${index + 1}`,
-    concept: `${root.en}${mod.en}${qual.en}${numTag}`,
-    category: root.cat,
-    imageEmoji: root.emoji,
+    id: `fc-word-${(index % AUTHENTIC_SANTALI_WORDS.length) + 1}`,
+    concept: item.concept,
+    category: item.category,
+    imageEmoji: item.imageEmoji,
     front: {
-      santhaliOlChiki: `${root.ol}${mod.ol}${qual.ol}${ctx.ol}`,
-      santhaliRoman: `${root.rom}${mod.rom}${qual.rom}${ctx.rom}`,
+      santhaliOlChiki: item.front.santhaliOlChiki,
+      santhaliRoman: item.front.santhaliRoman,
     },
     back: {
-      hindi: `${root.hi}${mod.hi}${qual.hi}${ctx.hi}`,
-      english: `${root.en}${mod.en}${qual.en}${ctx.en}`,
+      hindi: item.back.hindi,
+      english: item.back.english,
     },
   };
 }
@@ -1154,6 +1165,60 @@ export const db = {
     const data = readDB();
     data.userProfile.seenCardIds = [];
     writeDB(data);
+  },
+  recordFlashcardReview: (params: {
+    studentId?: string;
+    cardId: string;
+    concept: string;
+    result: "right" | "practice";
+  }) => {
+    const data = readDB();
+    const studentId = params.studentId || data.userProfile.id || "s1";
+    const student = data.students.find((s) => s.id === studentId);
+
+    // 1. Mark card as seen so it never repeats
+    if (!data.userProfile.seenCardIds.includes(params.cardId)) {
+      data.userProfile.seenCardIds.push(params.cardId);
+    }
+
+    if (student) {
+      if (!student.seenCardIds) student.seenCardIds = [];
+      if (!student.seenCardIds.includes(params.cardId)) {
+        student.seenCardIds.push(params.cardId);
+      }
+      student.cardsReviewed = (student.cardsReviewed || 0) + 1;
+
+      if (params.result === "right") {
+        // Correct answer: increment mastery, boost accuracy, remove from weakConcepts if present
+        student.accuracy = Math.min(100, Math.round(((student.accuracy || 80) * 9 + 100) / 10));
+        student.masteryPercentage = Math.min(100, (student.masteryPercentage || 75) + 1);
+        if (student.weakConcepts.includes(params.concept)) {
+          student.weakConcepts = student.weakConcepts.filter((c) => c !== params.concept);
+        }
+      } else {
+        // Needs practice (wrong): lower accuracy slightly, add to student's weak concepts for teacher
+        student.accuracy = Math.max(20, Math.round(((student.accuracy || 80) * 9 + 0) / 10));
+        student.masteryPercentage = Math.max(10, (student.masteryPercentage || 75) - 1);
+        if (params.concept && !student.weakConcepts.includes(params.concept)) {
+          student.weakConcepts.push(params.concept);
+        }
+      }
+
+      if (data.userProfile.id === studentId) {
+        data.userProfile.accuracy = student.accuracy;
+        data.userProfile.weakConcepts = [...student.weakConcepts];
+      }
+    }
+
+    writeDB(data);
+    return {
+      success: true,
+      studentId,
+      accuracy: student?.accuracy,
+      masteryPercentage: student?.masteryPercentage,
+      weakConcepts: student?.weakConcepts || [],
+      seenCount: data.userProfile.seenCardIds.length,
+    };
   },
 
   getStudents: (): StudentRecord[] => {

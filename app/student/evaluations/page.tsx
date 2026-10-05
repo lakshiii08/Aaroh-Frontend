@@ -121,21 +121,21 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                 className="text-xs text-gray-500 hover:text-ink inline-flex items-center gap-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Dashboard</span>
+                <span>{t("nav_dashboard")}</span>
               </Link>
               <span className="text-gray-300">/</span>
-              <span className="text-xs text-emerald font-semibold">Evaluations</span>
+              <span className="text-xs text-emerald font-semibold">{t("nav_evaluations")}</span>
             </div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-              Worksheet Evaluations &amp; Marks
+              {t("eval_title")}
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Review your teacher&apos;s marks, constructive feedback, and bilingual reverse-translations of your answers.
+              {t("eval_subtitle")}
             </p>
           </div>
 
           <Badge tone="emerald" className="self-start sm:self-auto text-xs px-3 py-1">
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 inline" /> {evaluations.length} Graded Assignments
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 inline" /> {t("eval_graded_assignments", { count: evaluations.length })}
           </Badge>
         </div>
 
@@ -143,20 +143,20 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
         <section className="bg-white border border-gray-200/80 rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-emerald uppercase tracking-wider">
-              Academic Standing
+              {t("eval_academic_standing")}
             </span>
             <h2 className="font-display font-bold text-lg text-ink">
-              Overall Assignment Average: {averageScore}%
+              {t("eval_overall_average", { score: averageScore })}
             </h2>
             <p className="text-xs text-gray-500 max-w-md">
-              All checked assignments from your teachers are recorded here with complete Ol Chiki feedback.
+              {t("eval_standing_desc")}
             </p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
             <div className="bg-emerald-50/80 border border-emerald-200/60 rounded-lg px-4 py-2.5 text-center">
               <span className="text-[10px] font-semibold text-emerald-800 uppercase tracking-wider block">
-                Worksheets Graded
+                {t("eval_worksheets_graded")}
               </span>
               <span className="font-display font-bold text-xl text-emerald-900 mt-0.5 block">
                 {evaluations.length}
@@ -165,7 +165,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
 
             <div className="bg-amber-50/80 border border-amber-200/60 rounded-lg px-4 py-2.5 text-center">
               <span className="text-[10px] font-semibold text-amber-800 uppercase tracking-wider block">
-                Average Grade
+                {t("eval_average_grade")}
               </span>
               <span className="font-display font-bold text-xl text-amber-900 mt-0.5 block">
                 A
@@ -178,7 +178,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-0.5">
-              Filter by Subject Folder
+              {t("eval_filter_subject")}
             </h2>
           </div>
 
@@ -192,7 +192,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                   : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
               )}
             >
-              All Subjects ({evaluations.length})
+              {t("eval_all_subjects", { count: evaluations.length })}
             </button>
             {subjects.map((sub) => {
               const count = evaluations.filter((e) => e.subjectId === sub.id).length;
@@ -227,13 +227,13 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
         {/* Evaluated Worksheets List */}
         <section className="space-y-4">
           {loading ? (
-            <div className="py-12 text-center text-xs text-gray-400">Loading evaluations...</div>
+            <div className="py-12 text-center text-xs text-gray-400">{t("loading")}</div>
           ) : filteredEvaluations.length === 0 ? (
             <div className="py-12 text-center space-y-2 border border-dashed border-gray-200 rounded-xl bg-cream/20">
               <CheckSquare className="w-8 h-8 text-gray-300 mx-auto" />
-              <p className="text-sm font-semibold text-gray-600">No evaluations yet</p>
+              <p className="text-sm font-semibold text-gray-600">{t("eval_no_evaluations")}</p>
               <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                Once your teacher checks your submitted worksheets and assigns marks, they will appear here.
+                {t("eval_no_evaluations_desc")}
               </p>
             </div>
           ) : (
@@ -262,7 +262,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                           Grade: {evalItem.grade || "A"}
                         </Badge>
                         <span className="text-[11px] text-gray-400">
-                          Checked on {formattedDate}
+                          {formattedDate}
                         </span>
                       </div>
                       <h3 className="font-display font-bold text-base text-ink">
@@ -273,7 +273,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                     <div className="flex items-center gap-3 self-end sm:self-auto">
                       <div className="text-right">
                         <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                          Marks Awarded
+                          {t("eval_marks_obtained", { marks: "" }).trim()}
                         </span>
                         <span className="font-display font-bold text-xl text-emerald-800">
                           {evalItem.marks}
@@ -286,7 +286,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                         className="text-xs gap-1"
                       >
                         <Download className="w-3.5 h-3.5 text-gray-500" />
-                        <span>Download Marks Card</span>
+                        <span>{t("eval_download_report")}</span>
                       </Button>
                     </div>
                   </div>
@@ -295,7 +295,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                   {evalItem.feedback && (
                     <div className="p-3.5 bg-emerald-50/50 border border-emerald-100 rounded-lg text-xs text-emerald-950 space-y-1">
                       <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-800 block">
-                        Teacher Feedback:
+                        {t("eval_teacher_feedback")}:
                       </span>
                       <p className="italic leading-relaxed">
                         &quot;{evalItem.feedback}&quot;
@@ -307,7 +307,7 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                   {evalItem.answers && evalItem.answers.length > 0 && (
                     <div className="space-y-3 pt-1">
                       <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                        Evaluated Questions &amp; Santali Answers
+                        {t("eval_title")} &amp; {t("eval_your_answer_sat")}
                       </span>
 
                       <div className="space-y-2.5">
@@ -317,12 +317,12 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                             className="p-3 rounded-lg bg-cream/40 border border-gray-100 space-y-2 text-xs"
                           >
                             <div className="font-semibold text-gray-900">
-                              Question {idx + 1}: {ans.question}
+                              {t("question_label")} {idx + 1}: {ans.question}
                             </div>
 
                             <div className="p-2.5 bg-white border border-gray-200/80 rounded-md">
                               <span className="text-[10px] font-bold text-emerald uppercase tracking-wider block">
-                                Your Answer (Santali Ol Chiki):
+                                {t("eval_your_answer_sat")}:
                               </span>
                               <p className="text-sm font-medium text-ink mt-0.5">
                                 {ans.studentAnswerSantali}
@@ -332,13 +332,13 @@ AI Reverse Translation (English): ${a.aiConvertedEnglish}
                             <div className="grid sm:grid-cols-2 gap-2 text-[11px]">
                               <div className="p-2 bg-amber-50/50 rounded border border-amber-100/60">
                                 <span className="font-bold text-amber-800 block">
-                                  Hindi Translation:
+                                  {t("eval_reverse_hindi")}:
                                 </span>
                                 <span className="text-ink">{ans.aiConvertedHindi}</span>
                               </div>
                               <div className="p-2 bg-emerald-50/50 rounded border border-emerald-100/60">
                                 <span className="font-bold text-emerald-800 block">
-                                  English Translation:
+                                  {t("eval_reverse_english")}:
                                 </span>
                                 <span className="text-ink">{ans.aiConvertedEnglish}</span>
                               </div>

@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sprout, Check, AlertCircle } from "lucide-react";
+import { Sprout, Check, AlertCircle, Sparkles, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type Role = "student" | "teacher";
@@ -13,12 +14,48 @@ export default function LoginPage() {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
   const [role, setRole] = useState<Role>("student");
-  const [rollNo, setRollNo] = useState("");
-  const [pin, setPin] = useState("");
+  const [rollNo, setRollNo] = useState("24");
+  const [schoolCode, setSchoolCode] = useState("DEMO01");
+  const [pin, setPin] = useState("1234");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleDemoTeacherLogin() {
+    setErrorMessage("");
+    setLoading(true);
+    setRole("teacher");
+    setEmail("teacher@123");
+    setPassword("teacher@123");
+
+    try {
+      await api.auth.login("teacher@123", "teacher@123");
+      router.push("/teacher/dashboard");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to log in with demo teacher account.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDemoStudentLogin() {
+    setErrorMessage("");
+    setLoading(true);
+    setRole("student");
+    setRollNo("24");
+    setPin("1234");
+    setSchoolCode("DEMO01");
+
+    try {
+      await api.auth.studentLogin("24", "1234", "DEMO01");
+      router.push("/student/dashboard");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to log in with demo student account.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,28 +63,28 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const payload =
-        role === "student"
-          ? { role: "student", rollNo: rollNo.trim(), pin: pin.trim() }
-          : { role: "teacher", email: email.trim(), password };
+      if (role === "student") {
+        if (!rollNo.trim() || !pin.trim() || !schoolCode.trim()) {
+          setErrorMessage("Please enter School Code, Roll Number, and Password.");
+          setLoading(false);
+          return;
+        }
 
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+        await api.auth.studentLogin(rollNo.trim(), pin.trim(), schoolCode.trim());
+        router.push("/student/dashboard");
+      } else {
+        if (!email.trim() || !password) {
+          setErrorMessage("Please enter Email / Identifier and Password.");
+          setLoading(false);
+          return;
+        }
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "Invalid credentials. Please verify with your school.");
-        setLoading(false);
-        return;
+        await api.auth.login(email.trim(), password);
+        router.push("/teacher/dashboard");
       }
-
-      router.push(role === "student" ? "/student/dashboard" : "/teacher/dashboard");
-    } catch (err) {
-      setErrorMessage("Could not connect to authentication service. Please try again.");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Invalid credentials. Please verify with your school.");
+    } finally {
       setLoading(false);
     }
   }
@@ -57,106 +94,90 @@ export default function LoginPage() {
       {/* Left panel: Simple School Portal Identity */}
       <div className="w-full md:w-80 lg:w-96 bg-emerald text-white p-6 sm:p-8 md:p-10 flex flex-col justify-between shrink-0">
         <div className="space-y-6">
-          {/* Logo & Portal Name */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-white/15 flex items-center justify-center">
-              <Sprout className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
+              <Sprout className="w-6 h-6 text-white" />
             </div>
             <div>
-              <span className="font-bold text-lg tracking-tight block leading-tight">AAROH</span>
-              <span className="text-[11px] text-emerald-100 font-medium block">
-                Primary School Portal
+              <span className="font-display text-xl font-bold tracking-tight block">AAROH</span>
+              <span className="text-white/70 text-xs font-medium">
+                {language === "sat"
+                  ? "ᱟᱭᱳ ᱟᱲᱟᱝ ᱥᱮᱪᱮᱫ ᱯᱞᱮᱴᱯᱷᱳᱨᱢ"
+                  : language === "hi"
+                  ? "मातृभाषा शिक्षण मंच"
+                  : "Mother-Tongue Learning Platform"}
               </span>
             </div>
           </div>
 
-          <div className="pt-2 pb-1 border-t border-white/15">
-            <h2 className="text-sm font-semibold text-white">
-              Multilingual Learning System
+          <div className="space-y-2 pt-4">
+            <h2 className="font-display text-xl font-bold">
+              {role === "student" ? t("login_left_student_title") : t("login_left_teacher_title")}
             </h2>
-            <p className="text-xs text-emerald-100/90 mt-1 leading-relaxed">
-              Supporting Santali (Ol Chiki), Hindi, and English in rural primary classrooms.
+            <p className="text-xs text-white/75 leading-relaxed">
+              {role === "student" ? t("login_left_student_desc") : t("login_left_teacher_desc")}
             </p>
           </div>
 
-          {/* Practical Guidelines */}
-          <div className="space-y-3 pt-2 text-xs text-emerald-100">
-            <div className="p-3 bg-white/10 rounded space-y-1">
-              <span className="font-semibold text-white block">Student Login Credentials</span>
-              <p className="text-[11px] leading-relaxed">
-                Use your official <strong className="text-white">Roll Number</strong> as your Login ID and the <strong className="text-white">4-Digit PIN</strong> provided by your teacher.
-              </p>
+          <div className="p-3.5 bg-white/10 rounded-lg border border-white/15 text-xs space-y-1.5">
+            <div className="font-semibold text-white/95 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>{t("login_ai_engine_title")}</span>
             </div>
-
-            <div className="p-3 bg-white/10 rounded space-y-1">
-              <span className="font-semibold text-white block">Teacher Portal Access</span>
-              <p className="text-[11px] leading-relaxed">
-                Log in with your registered school email to create student accounts, assign worksheets, and evaluate submissions.
-              </p>
-            </div>
+            <p className="text-white/70 text-[11px] leading-normal">
+              {t("login_ai_engine_desc")}
+            </p>
           </div>
         </div>
 
-        <div className="pt-6 border-t border-white/15 text-[11px] text-emerald-200">
-          Dumka District · Jharkhand Elementary Education
+        <div className="text-[11px] text-white/60 pt-6">
+          AAROH Education · Rural &amp; Tribal Primary Schools
         </div>
       </div>
 
-      {/* Right panel: Clean, Compact Login Form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 md:p-12">
-        <div className="w-full max-w-sm bg-white border border-gray-200 rounded-lg p-6 sm:p-7 space-y-5 shadow-xs">
-          {/* Form Header */}
-          <div className="border-b border-gray-100 pb-3">
-            <h1 className="text-lg font-bold text-ink">Sign In to Portal</h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Select your role and language to access your dashboard
+      {/* Right panel: Login Card */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 md:p-10 relative">
+        {/* Global Language Selector Header */}
+        <div className="w-full max-w-sm flex items-center justify-between pb-3">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+            <Globe className="w-4 h-4 text-emerald" />
+            <span>{t("language_selector_label") || "Language / ᱯᱟᱹᱨᱥᱤ"}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-ink shadow-xs">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as any)}
+              className="bg-transparent text-xs font-semibold outline-none cursor-pointer pr-1 text-ink"
+              aria-label="Select system language"
+            >
+              <option value="sat">ᱥᱟᱱᱛᱟᱲᱤ (Santali)</option>
+              <option value="en">English (EN)</option>
+              <option value="hi">हिंदी (Hindi)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="w-full max-w-sm bg-white border border-gray-200/80 rounded-xl shadow-xs p-6 space-y-5">
+          {/* Header */}
+          <div className="space-y-1">
+            <h3 className="font-display text-lg font-bold text-ink">{t("login_title")}</h3>
+            <p className="text-xs text-gray-500">
+              {role === "student" ? t("login_subtitle_student") : t("login_subtitle_teacher")}
             </p>
           </div>
 
-          {/* Error Message Alert */}
+          {/* Error Notice */}
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <div className="p-2.5 bg-red-50 border border-red-200/80 rounded text-xs text-red-700 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
           )}
 
-          {/* Language Selection */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block">
-              Portal Language
-            </label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { code: "en", label: "English" },
-                { code: "hi", label: "हिंदी" },
-                { code: "sat", label: "ᱥᱟᱱᱛᱟᱲᱤ" },
-              ].map((item) => {
-                const isSelected = language === item.code;
-                return (
-                  <button
-                    key={item.code}
-                    type="button"
-                    onClick={() => setLanguage(item.code as any)}
-                    className={cn(
-                      "py-1.5 px-2 rounded border text-xs font-medium flex items-center justify-center gap-1 transition-colors cursor-pointer",
-                      isSelected
-                        ? "border-emerald bg-emerald-50 text-emerald font-semibold"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                    )}
-                  >
-                    {isSelected && <Check className="w-3 h-3 text-emerald" />}
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Role Toggle Tabs */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block">
-              Login Type
+              {t("login_type_label")}
             </label>
             <div className="grid grid-cols-2 p-0.5 bg-gray-100 rounded border border-gray-200 text-xs">
               <button
@@ -172,7 +193,7 @@ export default function LoginPage() {
                     : "text-gray-600 hover:text-ink"
                 )}
               >
-                Student
+                {t("login_student_tab")}
               </button>
               <button
                 type="button"
@@ -187,7 +208,7 @@ export default function LoginPage() {
                     : "text-gray-600 hover:text-ink"
                 )}
               >
-                Teacher
+                {t("login_teacher_tab")}
               </button>
             </div>
           </div>
@@ -198,13 +219,27 @@ export default function LoginPage() {
               <>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700 block">
-                    Roll Number <span className="font-normal text-gray-400">(Login ID)</span>
+                    {t("login_school_code_label")}
+                  </label>
+                  <input
+                    type="text"
+                    value={schoolCode}
+                    onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
+                    placeholder="DEMO01"
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none focus:border-emerald font-medium text-ink bg-white font-mono uppercase"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-700 block">
+                    {t("login_roll_label")}
                   </label>
                   <input
                     type="text"
                     value={rollNo}
                     onChange={(e) => setRollNo(e.target.value)}
-                    placeholder="e.g. 24"
+                    placeholder="24"
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none focus:border-emerald font-medium text-ink bg-white font-mono"
                     required
                   />
@@ -212,14 +247,13 @@ export default function LoginPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700 block">
-                    4-Digit Secret PIN <span className="font-normal text-gray-400">(Password)</span>
+                    {t("login_pin_label")}
                   </label>
                   <input
                     type="password"
-                    maxLength={4}
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    placeholder="e.g. 1234"
+                    placeholder="••••••••"
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none focus:border-emerald font-medium text-ink bg-white font-mono"
                     required
                   />
@@ -229,13 +263,13 @@ export default function LoginPage() {
               <>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700 block">
-                    School Email Address
+                    {t("login_teacher_email_label")}
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="hemant.soren@aaroh-edu.in"
+                    placeholder="teacher@123"
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none focus:border-emerald font-medium text-ink bg-white"
                     required
                   />
@@ -243,7 +277,7 @@ export default function LoginPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700 block">
-                    Password
+                    {t("login_password_label")}
                   </label>
                   <input
                     type="password"
@@ -257,23 +291,74 @@ export default function LoginPage() {
               </>
             )}
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <Button type="submit" variant="primary" size="md" className="w-full text-xs" disabled={loading}>
                 {loading
-                  ? "Verifying..."
+                  ? t("login_verifying")
                   : role === "student"
-                  ? "Sign In to Student Portal"
-                  : "Enter Teacher Portal"}
+                  ? t("login_btn_student")
+                  : t("login_btn_teacher")}
               </Button>
+
+              {role === "student" ? (
+                <button
+                  type="button"
+                  onClick={handleDemoStudentLogin}
+                  disabled={loading}
+                  className="w-full py-2 px-3 border border-emerald/30 bg-emerald/10 hover:bg-emerald/20 text-emerald-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald" />
+                  <span>{t("demo_student_btn")}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleDemoTeacherLogin}
+                  disabled={loading}
+                  className="w-full py-2 px-3 border border-emerald/30 bg-emerald/10 hover:bg-emerald/20 text-emerald-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald" />
+                  <span>{t("demo_teacher_btn")}</span>
+                </button>
+              )}
             </div>
           </form>
 
-          {/* Quick Guidance / Demo Note */}
-          <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-400 text-center space-y-0.5">
+          {/* Quick Demo Credentials Footer */}
+          <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-500 text-center space-y-1">
             {role === "student" ? (
-              <p>Demo Student: Roll No. <strong className="text-gray-600 font-mono">24</strong> · PIN <strong className="text-gray-600 font-mono">1234</strong></p>
+              <p>
+                {t("login_dev_demo")}:{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRollNo("24");
+                    setPin("1234");
+                    setSchoolCode("DEMO01");
+                    setErrorMessage("");
+                  }}
+                  className="text-emerald hover:underline font-semibold cursor-pointer"
+                  title="Click to fill Roll: 24 / PIN: 1234"
+                >
+                  Roll 24 / PIN 1234 ({t("login_click_to_fill")})
+                </button>
+              </p>
             ) : (
-              <p>Demo Teacher: <strong className="text-gray-600">hemant.soren@aaroh-edu.in</strong></p>
+              <p>
+                {t("login_dev_demo")}:{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("teacher@123");
+                    setPassword("teacher@123");
+                    setErrorMessage("");
+                  }}
+                  className="text-emerald hover:underline font-semibold cursor-pointer"
+                  title="Click to fill teacher@123"
+                >
+                  teacher@123 / teacher@123 ({t("login_click_to_fill")})
+                </button>
+              </p>
             )}
           </div>
         </div>

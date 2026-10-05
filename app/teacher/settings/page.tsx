@@ -34,10 +34,14 @@ export default function TeacherSettingsPage() {
       .then((data) => {
         if (data.profile) {
           setProfile(data.profile);
+          const savedInStorage = typeof window !== "undefined" ? localStorage.getItem("aaroh_language") : null;
+          if (!savedInStorage && data.profile.language) {
+            setLanguage(data.profile.language);
+          }
         }
       })
       .catch(() => {});
-  }, []);
+  }, [setLanguage]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,17 +71,17 @@ export default function TeacherSettingsPage() {
       <main className="flex-1 min-w-0 max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-8 pb-24 md:pb-12 space-y-6">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-            Teacher Settings
+            {t("teacher_settings_title")}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Configure your portal language, classroom details, and worksheet grading preferences.
+            {t("teacher_settings_subtitle")}
           </p>
         </div>
 
         {saved && (
           <div className="p-3.5 bg-emerald-50 border border-emerald-200/70 rounded-lg flex items-center gap-2 text-emerald-900 text-xs font-semibold">
             <CheckCircle2 className="w-4 h-4 text-emerald shrink-0" />
-            <span>Settings saved successfully. All changes are active across your classroom.</span>
+            <span>{t("settings_saved")}</span>
           </div>
         )}
 
@@ -86,10 +90,10 @@ export default function TeacherSettingsPage() {
           <section className="bg-white border border-gray-200/80 rounded-xl p-5 sm:p-6 space-y-4">
             <div>
               <h2 className="font-display font-bold text-base text-ink">
-                Interface Language
+                {t("settings_language_heading")}
               </h2>
               <p className="text-xs text-gray-500 mt-0.5">
-                Select your preferred working language for the teacher dashboard and navigation.
+                {t("settings_language_desc")}
               </p>
             </div>
 
@@ -131,20 +135,20 @@ export default function TeacherSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-display font-bold text-base text-ink">
-                  Educator Profile
+                  {t("teacher_profile_heading")}
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Information displayed on generated worksheets and student evaluations.
+                  {t("teacher_profile_desc")}
                 </p>
               </div>
               <Badge tone="emerald" className="hidden sm:inline-flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> Verified Teacher
+                <ShieldCheck className="w-3 h-3" /> {t("teacher_verified_badge")}
               </Badge>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600 block">Full Name</label>
+                <label className="text-xs font-semibold text-gray-600 block">{t("settings_name")}</label>
                 <input
                   type="text"
                   value={profile.name}
@@ -155,7 +159,7 @@ export default function TeacherSettingsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600 block">Employee / Teacher ID</label>
+                <label className="text-xs font-semibold text-gray-600 block">{t("teacher_employee_id")}</label>
                 <input
                   type="text"
                   value={profile.employeeId}
@@ -166,7 +170,7 @@ export default function TeacherSettingsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600 block">Assigned Grade / Class</label>
+                <label className="text-xs font-semibold text-gray-600 block">{t("teacher_assigned_grade")}</label>
                 <input
                   type="text"
                   value={profile.assignedGrade}
@@ -177,7 +181,7 @@ export default function TeacherSettingsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600 block">Subject Specialization</label>
+                <label className="text-xs font-semibold text-gray-600 block">{t("teacher_specialization")}</label>
                 <input
                   type="text"
                   value={profile.subjectSpecialization}
@@ -188,7 +192,7 @@ export default function TeacherSettingsPage() {
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-semibold text-gray-600 block">School / Institution</label>
+                <label className="text-xs font-semibold text-gray-600 block">{t("teacher_school_center")}</label>
                 <input
                   type="text"
                   value={profile.schoolName}
@@ -199,7 +203,7 @@ export default function TeacherSettingsPage() {
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-semibold text-gray-600 block">Teacher Email</label>
+                <label className="text-xs font-semibold text-gray-600 block">Email</label>
                 <input
                   type="email"
                   value={profile.email}
@@ -215,10 +219,10 @@ export default function TeacherSettingsPage() {
           <section className="bg-white border border-gray-200/80 rounded-xl p-5 sm:p-6 space-y-4">
             <div>
               <h2 className="font-display font-bold text-base text-ink">
-                Grading &amp; Translation Workflow
+                {t("teacher_class_pref")}
               </h2>
               <p className="text-xs text-gray-500 mt-0.5">
-                Control automated features for bilingual conversion and assignment evaluation.
+                {t("teacher_settings_subtitle")}
               </p>
             </div>
 
@@ -233,14 +237,14 @@ export default function TeacherSettingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-ink">
-                      Automated AI Bilingual Reverse-Translation
+                      {t("teacher_auto_ai")}
                     </span>
                     <Badge tone="emerald" className="text-[10px] py-0 px-1.5">
                       <Sparkles className="w-2.5 h-2.5 mr-0.5 inline" /> AI Assist
                     </Badge>
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                    When students submit answers in Santali (Ol Chiki or Roman), automatically generate instant side-by-side English and Hindi translations during teacher evaluation.
+                    {t("teacher_auto_ai_desc")}
                   </p>
                 </div>
               </label>
@@ -255,14 +259,14 @@ export default function TeacherSettingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-ink">
-                      Permit Late Submissions
+                      {t("teacher_late_submissions")}
                     </span>
                     <Badge tone="amber" className="text-[10px] py-0 px-1.5">
                       <Clock className="w-2.5 h-2.5 mr-0.5 inline" /> Policy
                     </Badge>
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                    Allow students with internet or power constraints to submit worksheets past the due date with a &quot;Late&quot; flag.
+                    {t("teacher_late_sub_desc")}
                   </p>
                 </div>
               </label>
@@ -277,14 +281,14 @@ export default function TeacherSettingsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-ink">
-                      New Submission Notifications
+                      {t("teacher_notifications")}
                     </span>
                     <Badge tone="slate" className="text-[10px] py-0 px-1.5">
                       <Bell className="w-2.5 h-2.5 mr-0.5 inline" /> Alert
                     </Badge>
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                    Show notification banners when a student finishes and uploads a completed assignment.
+                    {t("teacher_notif_desc")}
                   </p>
                 </div>
               </label>
@@ -293,7 +297,7 @@ export default function TeacherSettingsPage() {
 
           <div className="flex justify-end pt-2">
             <Button type="submit" variant="primary" size="md" disabled={saving}>
-              {saving ? "Saving Changes..." : "Save Preferences"}
+              {saving ? t("saving") : t("settings_save_btn")}
             </Button>
           </div>
         </form>

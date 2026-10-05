@@ -81,15 +81,26 @@ export async function GET(request: Request) {
   });
 }
 
-// POST endpoint to record reviewed/seen card IDs for the logged-in profile
+// POST endpoint to record reviewed/seen card IDs and learning telemetry for teacher
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { cardId, cardIds, reset } = body;
+    const { cardId, cardIds, reset, result, concept, studentId } = body;
 
     if (reset) {
       db.resetSeenCards();
       return NextResponse.json({ success: true, message: "Seen history reset", seenCount: 0 });
+    }
+
+    // If review result ("right" or "practice") is provided, record learning telemetry for teacher
+    if (result && cardId) {
+      const reviewResult = db.recordFlashcardReview({
+        cardId,
+        concept: concept || "General Concept",
+        result: result === "right" ? "right" : "practice",
+        studentId,
+      });
+      return NextResponse.json({ ...reviewResult });
     }
 
     let updatedSeen: string[] = [];

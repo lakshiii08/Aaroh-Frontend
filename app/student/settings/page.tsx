@@ -34,7 +34,9 @@ export default function StudentSettingsPage() {
       .then((data) => {
         if (data.profile) {
           setProfile(data.profile);
-          if (data.profile.language) {
+          // If no stored preference in localStorage, sync from profile
+          const savedInStorage = typeof window !== "undefined" ? localStorage.getItem("aaroh_language") : null;
+          if (!savedInStorage && data.profile.language) {
             setLanguage(data.profile.language);
           }
         }
@@ -65,14 +67,14 @@ export default function StudentSettingsPage() {
   };
 
   const handleResetFlashcardHistory = async () => {
-    if (confirm("Reset seen flashcards for this profile?")) {
+    if (confirm(t("settings_reset_flashcard") + "?")) {
       await fetch("/api/flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reset: true }),
       });
       setProfile((prev) => ({ ...prev, seenCardIds: [] }));
-      alert("Flashcard history cleared. You will now see cards from the beginning.");
+      alert(t("settings_saved"));
     }
   };
 
@@ -86,7 +88,7 @@ export default function StudentSettingsPage() {
             {t("settings_title")}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Manage your interface language and view your official school record.
+            {t("settings_subtitle")}
           </p>
         </div>
 
@@ -106,7 +108,7 @@ export default function StudentSettingsPage() {
                   {t("settings_language_heading")}
                 </h2>
                 <Badge tone="emerald" className="text-[10px] py-0 px-1.5 font-normal">
-                  Editable
+                  {t("settings_editable_badge")}
                 </Badge>
               </div>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -152,11 +154,11 @@ export default function StudentSettingsPage() {
                   {t("settings_profile_heading")}
                 </h2>
                 <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">
-                  <Lock className="w-3 h-3 text-gray-400" /> Read-only official record
+                  <Lock className="w-3 h-3 text-gray-400" /> {t("settings_read_only")}
                 </span>
               </div>
               <p className="text-xs text-gray-500 mt-0.5">
-                Student identity and credentials are managed directly by your class teacher.
+                {t("settings_managed_by_teacher")}
               </p>
             </div>
 
@@ -175,7 +177,7 @@ export default function StudentSettingsPage() {
 
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-600 block">
-                  {t("settings_roll")} (Login ID)
+                  {t("settings_roll")}
                 </label>
                 <input
                   type="text"
@@ -187,7 +189,7 @@ export default function StudentSettingsPage() {
 
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-600 block">
-                  Class / Grade
+                  {t("settings_grade")}
                 </label>
                 <input
                   type="text"
@@ -199,7 +201,7 @@ export default function StudentSettingsPage() {
 
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-gray-600 block">
-                  School / Village
+                  {t("settings_school")}
                 </label>
                 <input
                   type="text"
@@ -211,7 +213,7 @@ export default function StudentSettingsPage() {
 
               <div className="space-y-1 sm:col-span-2">
                 <label className="text-xs font-semibold text-gray-600 block">
-                  4-Digit Login PIN (Password)
+                  {t("settings_pin_password")}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -221,7 +223,7 @@ export default function StudentSettingsPage() {
                     className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono font-medium text-gray-700 cursor-not-allowed select-none outline-none"
                   />
                   <span className="text-[11px] text-gray-400 shrink-0">
-                    Assigned by your teacher
+                    {t("settings_managed_by_teacher")}
                   </span>
                 </div>
               </div>
@@ -229,24 +231,24 @@ export default function StudentSettingsPage() {
 
             <div className="pt-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <Badge tone="emerald">{profile.accuracy}% Overall Accuracy</Badge>
-                <Badge tone="amber">{profile.badges} Badges</Badge>
+                <Badge tone="emerald">{profile.accuracy}% {t("dashboard_accuracy")}</Badge>
+                <Badge tone="amber">{profile.badges} {t("dashboard_badges")}</Badge>
               </div>
 
               <button
                 type="button"
                 onClick={handleResetFlashcardHistory}
-                className="text-gray-500 hover:text-gray-900 inline-flex items-center gap-1.5 text-xs font-medium underline"
+                className="text-gray-500 hover:text-gray-900 inline-flex items-center gap-1.5 text-xs font-medium underline cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset seen cards history</span>
+                <span>{t("settings_reset_flashcard")}</span>
               </button>
             </div>
           </section>
 
           <div className="flex justify-end">
             <Button type="submit" variant="primary" size="md" disabled={saving}>
-              {saving ? t("loading") : t("settings_save_btn")}
+              {saving ? t("saving") : t("settings_save_btn")}
             </Button>
           </div>
         </form>

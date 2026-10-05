@@ -65,10 +65,10 @@ export default function StudentNotificationsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-              {t("notifications_title")}
+              {t("notif_title")}
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Updates on worksheets, assessments, and teacher announcements.
+              {t("notif_subtitle")}
             </p>
           </div>
 
@@ -81,7 +81,7 @@ export default function StudentNotificationsPage() {
               className="text-xs self-start"
             >
               <CheckCheck className="w-3.5 h-3.5 mr-1 text-emerald" />
-              <span>{t("notifications_mark_all")}</span>
+              <span>{t("notif_mark_all_read")}</span>
             </Button>
           )}
         </div>
@@ -93,7 +93,7 @@ export default function StudentNotificationsPage() {
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center bg-white rounded-xl border border-gray-200/80 space-y-2">
             <Bell className="w-8 h-8 text-gray-300 mx-auto" />
-            <p className="text-sm font-semibold text-gray-700">{t("notifications_empty")}</p>
+            <p className="text-sm font-semibold text-gray-700">{t("notif_empty")}</p>
           </div>
         ) : (
           <div className="bg-white border border-gray-200/80 rounded-xl divide-y divide-gray-100 overflow-hidden">
@@ -142,7 +142,7 @@ export default function StudentNotificationsPage() {
                     onClick={() => markItemRead(notif.id)}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-emerald hover:text-emerald-dark px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50 transition-colors shrink-0 self-start sm:self-auto"
                   >
-                    <span>View Worksheet</span>
+                    <span>{t("notif_view_worksheet")}</span>
                     <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>

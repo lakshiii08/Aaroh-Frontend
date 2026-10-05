@@ -1,122 +1,225 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Volume2,
   CheckCircle2,
+  AlertTriangle,
   RotateCcw,
   ChevronRight,
-  Search,
+  ChevronLeft,
   Shuffle,
   RefreshCw,
   Rotate3D,
   Sparkles,
+  Search,
+  BookOpen,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { speak, cn } from "@/lib/utils";
 import { useLanguage } from "@/components/providers/language-provider";
-import { FlashcardItem } from "@/lib/db";
+import { api } from "@/lib/api";
 
-const categories = ["All", "Vocabulary", "Science", "Math", "Geography"] as const;
+const CATEGORIES = [
+  { id: "All", labelKey: "flashcards_category_all", fallback: "All Categories (10M+)" },
+  { id: "Vocabulary", labelKey: "flashcards_category_vocab", fallback: "Vocabulary" },
+  { id: "Science", labelKey: "flashcards_category_science", fallback: "Science" },
+  { id: "Math", labelKey: "flashcards_category_math", fallback: "Math" },
+  { id: "Geography", labelKey: "flashcards_category_social", fallback: "Geography" },
+];
+
+export interface FlashcardItem {
+  id: string;
+  concept: string;
+  category: string;
+  imageEmoji: string;
+  front: {
+    santhaliOlChiki: string;
+    santhaliRoman: string;
+  };
+  back: {
+    hindi: string;
+    english: string;
+  };
+  exampleSentence?: string;
+}
 
 export function FlashcardDeck() {
   const { t } = useLanguage();
-  const [category, setCategory] = useState<string>("All");
-  const [search, setSearch] = useState<string>("");
   const [cards, setCards] = useState<FlashcardItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [results, setResults] = useState<Record<string, "right" | "practice">>({});
-  const [seenCount, setSeenCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [masteredCount, setMasteredCount] = useState(0);
+  const [stackPage, setStackPage] = useState(1);
   const [speakingKey, setSpeakingKey] = useState<string | null>(null);
+  const [toastNotice, setToastNotice] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchCards = useCallback(async (cat: string, q: string, p: number, isRandom = false) => {
+  // Persistent seen card IDs to prevent any repeating cards
+  const [seenCardIds, setSeenCardIds] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("aaroh_seen_flashcard_ids");
+        return stored ? new Set(JSON.parse(stored)) : new Set<string>();
+      } catch {
+        return new Set<string>();
+      }
+    }
+    return new Set<string>();
+  });
+
+  // Fetch unique non-repeating cards from the 10 Million+ vocabulary engine
+  const fetchCardStack = useCallback(async (cat: string, search: string, pageNum: number, isShuffle = false) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: p.toString(),
-        limit: "15",
-        category: cat,
-        search: q,
-        random: isRandom ? "true" : "false",
-        excludeSeen: "true",
-      });
-      const res = await fetch(`/api/flashcards?${params.toString()}`);
+      const qParams = new URLSearchParams();
+      qParams.set("category", cat);
+      qParams.set("page", pageNum.toString());
+      qParams.set("limit", "15");
+      qParams.set("excludeSeen", "true");
+      if (isShuffle) qParams.set("random", "true");
+      if (search.trim()) qParams.set("search", search.trim());
+
+      const res = await fetch(`/api/flashcards?${qParams.toString()}`);
       const data = await res.json();
-      if (data.cards) {
-        setCards(data.cards);
+
+      if (data && Array.isArray(data.cards) && data.cards.length > 0) {
+        // Double-check client-side deduplication against seenCardIds
+        const freshCards = data.cards.filter((c: FlashcardItem) => !seenCardIds.has(c.id));
+        setCards(freshCards.length > 0 ? freshCards : data.cards);
         setIndex(0);
         setFlipped(false);
-        if (typeof data.seenCount === "number") setSeenCount(data.seenCount);
+      } else {
+        // If all seen in current stack, fetch next batch
+        setCards([]);
       }
     } catch (e) {
-      console.error("Failed to fetch flashcards:", e);
+      console.error("Failed to load 10M+ flashcard deck:", e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [seenCardIds]);
 
   useEffect(() => {
-    fetchCards(category, search, page, false);
-  }, [category, page, fetchCards]);
+    fetchCardStack(category, searchQuery, stackPage, true);
+  }, [category, stackPage, fetchCardStack]);
 
-  const recordSeen = async (cardId: string) => {
+  const showToast = (message: string) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToastNotice(message);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastNotice(null);
+    }, 2400);
+  };
+
+  const card = cards[index];
+
+  const handleNextCard = () => {
+    setFlipped(false);
+    if (index + 1 < cards.length) {
+      setIndex((i) => i + 1);
+    } else {
+      // Finished current stack of unique cards! Load next unique stack from 10M+ library
+      setStackPage((p) => p + 1);
+    }
+  };
+
+  const handlePrevCard = () => {
+    if (index > 0) {
+      setFlipped(false);
+      setIndex((i) => i - 1);
+    }
+  };
+
+  // Grade card & send real learning telemetry to teacher
+  const markReview = async (result: "right" | "practice") => {
+    if (!card) return;
+
+    // 1. Permanently record as seen to guarantee zero repetition
+    const nextSeen = new Set(seenCardIds);
+    nextSeen.add(card.id);
+    setSeenCardIds(nextSeen);
     try {
-      const res = await fetch("/api/flashcards", {
+      localStorage.setItem("aaroh_seen_flashcard_ids", JSON.stringify(Array.from(nextSeen)));
+    } catch {}
+
+    const currentUser = api.getCurrentUser();
+    const studentId = currentUser?.user_id || "s1";
+
+    // 2. Send data to teacher & database
+    try {
+      await fetch("/api/flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cardId }),
+        body: JSON.stringify({
+          cardId: card.id,
+          concept: card.concept,
+          result,
+          studentId,
+          category: card.category,
+        }),
       });
-      const data = await res.json();
-      if (data.seenCount) setSeenCount(data.seenCount);
-    } catch (e) {
-      console.error("Failed to record seen card:", e);
-    }
-  };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchCards(category, search, 1, false);
-  };
-
-  const handleShuffle = () => {
-    setSearch("");
-    setPage(1);
-    fetchCards(category, "", 1, true);
-  };
-
-  const card: FlashcardItem | undefined = cards[index];
-
-  function nextCard() {
-    if (card) {
-      recordSeen(card.id);
-    }
-    setFlipped(false);
-    if (cards.length > 0) {
-      if (index + 1 >= cards.length) {
-        setPage((p) => p + 1);
+      // Also record gamification & teacher gap activity on FastAPI backend
+      if (result === "right") {
+        setMasteredCount((c) => c + 1);
+        showToast("✓ Got it right! +10 XP · Concept Mastered");
+        api.gamification.recordActivity(studentId, {
+          student_name: currentUser?.name || "Student",
+          school_id: currentUser?.school_id || "SCH_001",
+          grade_level: 4,
+          activity_type: "flashcard_mastered",
+          concept_code: card.concept,
+        }).catch(() => {});
       } else {
-        setIndex((i) => i + 1);
+        showToast("⚠️ Marked for Teacher Practice Assistance");
+        api.gamification.recordActivity(studentId, {
+          student_name: currentUser?.name || "Student",
+          school_id: currentUser?.school_id || "SCH_001",
+          grade_level: 4,
+          activity_type: "flashcard_gap_detected",
+          concept_code: card.concept,
+        }).catch(() => {});
       }
+    } catch (err) {
+      console.warn("Telemetry reporting error:", err);
     }
-  }
 
-  function mark(result: "right" | "practice") {
-    if (!card) return;
-    setResults((r) => ({ ...r, [card.id]: result }));
-    recordSeen(card.id);
-    setTimeout(nextCard, 220);
-  }
+    // Auto advance to next unique card
+    setTimeout(handleNextCard, 260);
+  };
 
-  // Audio Playback Helpers with state tracking
-  const playSantaliAudio = (e?: React.MouseEvent) => {
+  // Audio Pronunciation Handlers
+  const playSantaliAudio = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!card) return;
     setSpeakingKey("sat");
-    speak(card.front.santhaliRoman, "hi-IN", () => setSpeakingKey(null));
+
+    const romanPhonetic = card.front.santhaliRoman;
+    try {
+      const synth = await api.voice.synthesize({
+        text: romanPhonetic,
+        target_language: "sat",
+        target_dialect: "sat",
+      });
+      if (synth && synth.stream_url) {
+        const audio = new Audio(synth.stream_url);
+        audio.onended = () => setSpeakingKey(null);
+        audio.onerror = () => {
+          speak(romanPhonetic, "hi-IN", () => setSpeakingKey(null));
+        };
+        await audio.play();
+      } else {
+        speak(romanPhonetic, "hi-IN", () => setSpeakingKey(null));
+      }
+    } catch {
+      speak(romanPhonetic, "hi-IN", () => setSpeakingKey(null));
+    }
   };
 
   const playHindiAudio = (e?: React.MouseEvent) => {
@@ -133,68 +236,83 @@ export function FlashcardDeck() {
     speak(card.back.english, "en-US", () => setSpeakingKey(null));
   };
 
-  const doneCount = Object.keys(results).filter((id) => cards.some((c) => c.id === id)).length;
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchCardStack(category, searchQuery, 1, false);
+  };
 
   return (
-    <div className="space-y-6 max-w-xl mx-auto">
-      {/* Controls & Search */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <form onSubmit={handleSearchSubmit} className="flex-1 relative">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("flashcards_search_placeholder")}
-              className="w-full bg-white border border-[#E0D8C8] rounded-lg pl-9 pr-3 py-2 text-xs outline-none focus:border-emerald text-ink placeholder:text-gray-400 shadow-xs"
-            />
-          </form>
+    <div className="space-y-5 max-w-xl mx-auto">
+      {/* Toast Feedback Notice */}
+      {toastNotice && (
+        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 bg-ink text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg border border-white/20 animate-fade-in flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <span>{toastNotice}</span>
+        </div>
+      )}
 
-          <Button
-            type="button"
-            onClick={handleShuffle}
-            variant="outline"
-            size="sm"
-            className="text-xs shrink-0 bg-white border-[#E0D8C8] text-gray-700 hover:bg-[#FAF7F0]"
-          >
-            <Shuffle className="w-3.5 h-3.5 text-gray-500" />
-            <span>Shuffle</span>
-          </Button>
+      {/* Top Search Bar & Shuffle Button */}
+      <div className="flex items-center gap-2">
+        <form onSubmit={handleSearchSubmit} className="flex-1 relative">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("flashcards_search_placeholder") || "Search 10M+ vocabulary..."}
+            className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-200/90 rounded-lg outline-none focus:border-emerald font-medium text-ink shadow-xs"
+          />
+        </form>
+
+        <button
+          type="button"
+          onClick={() => fetchCardStack(category, searchQuery, stackPage, true)}
+          className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200/90 hover:border-gray-300 text-gray-700 text-xs font-semibold rounded-lg shadow-xs cursor-pointer transition-colors shrink-0"
+          title="Shuffle cards"
+        >
+          <Shuffle className="w-3.5 h-3.5 text-emerald" />
+          <span>Shuffle</span>
+        </button>
+      </div>
+
+      {/* Category Pills & Progress Counter */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => {
+                setCategory(c.id);
+                setStackPage(1);
+              }}
+              className={cn(
+                "px-3 py-1 rounded-md text-xs font-medium transition-colors border cursor-pointer",
+                category === c.id
+                  ? "bg-emerald text-white border-emerald shadow-xs"
+                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+              )}
+            >
+              {t(c.labelKey) || c.fallback}
+            </button>
+          ))}
         </div>
 
-        {/* Category selector */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-          <div className="flex flex-wrap gap-1.5">
-            {categories.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => {
-                  setCategory(c);
-                  setPage(1);
-                  setSearch("");
-                }}
-                className={cn(
-                  "px-3 py-1 rounded-md text-xs font-medium transition-colors border",
-                  category === c
-                    ? "bg-emerald text-white border-emerald shadow-xs"
-                    : "bg-white text-gray-600 border-[#E5E0D5] hover:bg-[#FAF7F0]"
-                )}
-              >
-                {c === "All" ? t("flashcards_category_all") : c}
-              </button>
-            ))}
-          </div>
-
-          <div className="text-[11px] text-gray-500 font-medium">
-            {seenCount > 0 && <span>{seenCount} mastered · </span>}
-            {cards.length > 0 && <span>Card {index + 1} of {cards.length}</span>}
-          </div>
+        <div className="text-[11px] text-gray-500 font-medium shrink-0">
+          {masteredCount > 0 && (
+            <span className="font-semibold text-emerald-800 mr-1">
+              {masteredCount} mastered ·
+            </span>
+          )}
+          {cards.length > 0 ? (
+            <span>Card {index + 1} of {cards.length}</span>
+          ) : (
+            <span>Stack #{stackPage}</span>
+          )}
         </div>
       </div>
 
-      {/* PHYSICAL STUDY FLASHCARD CONTAINER */}
+      {/* MAIN FLASHCARD STACK CONTAINER */}
       {loading ? (
         <div className="aspect-[1.5/1] rounded-2xl bg-[#FCFAF5] border border-[#E2DBD0] flex flex-col items-center justify-center p-8 gap-2 shadow-sm">
           <RefreshCw className="w-6 h-6 text-emerald animate-spin" />
@@ -202,17 +320,22 @@ export function FlashcardDeck() {
         </div>
       ) : cards.length === 0 ? (
         <div className="aspect-[1.5/1] rounded-2xl bg-[#FCFAF5] border-2 border-dashed border-[#DCD5C8] flex flex-col items-center justify-center p-8 text-center space-y-3 shadow-sm">
-          <p className="text-sm font-semibold text-ink">All cards in this batch reviewed</p>
-          <p className="text-xs text-gray-500 max-w-xs">
-            Every card in this stack has been practiced without repeats. Load the next stack from the 10 Million+ vocabulary database.
+          <p className="text-sm font-semibold text-ink">
+            {t("flashcards_empty") || "No new unreviewed cards in this category."}
           </p>
-          <Button onClick={() => setPage((p) => p + 1)} variant="primary" size="sm">
-            Load Next Stack
+          <Button
+            onClick={() => fetchCardStack(category, searchQuery, stackPage + 1, true)}
+            variant="primary"
+            size="sm"
+            className="text-xs gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Load Next 10M+ Stack</span>
           </Button>
         </div>
       ) : card ? (
         <div style={{ perspective: "1200px" }} className="relative group">
-          {/* Subtle paper stack shadow layers behind the active card */}
+          {/* Stack effect background layers */}
           <div className="absolute inset-0 bg-[#F2EDE2] rounded-2xl transform translate-y-1.5 translate-x-0.5 border border-[#DDD5C5] -z-10" />
           <div className="absolute inset-0 bg-[#E8E2D4] rounded-2xl transform translate-y-3 translate-x-1 border border-[#D5CDC0] -z-20 opacity-80" />
 
@@ -232,17 +355,17 @@ export function FlashcardDeck() {
                 transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
             >
-              {/* ============================================================== */}
-              {/* FRONT: Authentic Physical Study Card (Santali Ol Chiki + Audio) */}
-              {/* ============================================================== */}
+              {/* ─────────────────────────────────────────────────────────────
+                  FRONT: 1st shown as Santali (Ol Chiki + Roman + Audio)
+                  ───────────────────────────────────────────────────────────── */}
               <div
-                className="absolute inset-0 rounded-2xl bg-[#FFFDF8] border-2 border-[#DFD6C6] shadow-[0_5px_16px_rgba(40,30,15,0.07),0_1px_2px_rgba(40,30,15,0.05)] flex flex-col justify-between overflow-hidden"
+                className="absolute inset-0 rounded-2xl bg-[#FFFDF8] border-2 border-[#DFD6C6] shadow-sm flex flex-col justify-between overflow-hidden"
                 style={{ backfaceVisibility: "hidden" }}
               >
-                {/* Physical index card top header with ruled index line */}
+                {/* Header: Category and Script Identity */}
                 <div className="px-6 pt-4 pb-2 border-b border-[#E8DFD0] flex items-center justify-between bg-[#FAF6EC]/60">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#E5DDD0] border border-[#C8BEB0]" title="Index hole punch" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#E5DDD0] border border-[#C8BEB0]" />
                     <span className="text-[11px] font-bold tracking-widest text-[#7A6B58] uppercase">
                       {card.category}
                     </span>
@@ -258,206 +381,185 @@ export function FlashcardDeck() {
                   </div>
                 </div>
 
-                {/* Card Center Content */}
+                {/* Center: Authentic Ol Chiki Script & Roman Pronunciation */}
                 <div className="flex flex-col items-center justify-center text-center my-auto px-6 py-4 space-y-2">
                   <span className="text-3xl select-none" role="img" aria-hidden="true">
                     {card.imageEmoji}
                   </span>
 
-                  {/* Primary Ol Chiki Script */}
-                  <p className="olchiki text-5xl sm:text-6xl font-bold text-[#1E1B15] tracking-wide leading-tight drop-shadow-xs">
+                  <p className="olchiki text-5xl sm:text-6xl font-bold text-[#1E1B15] tracking-wide leading-tight">
                     {card.front.santhaliOlChiki}
                   </p>
 
-                  {/* Roman Transliteration */}
                   <p className="text-xl sm:text-2xl font-serif text-[#4D453A] font-medium tracking-normal">
                     {card.front.santhaliRoman}
                   </p>
                 </div>
 
-                {/* Card Bottom Footer: Santali Vocal + Flip Cue */}
+                {/* Footer on Front: Pronounce Santali & Flip Prompt */}
                 <div className="px-6 py-3 border-t border-[#EDE5D8] bg-[#FAF6EE]/70 flex items-center justify-between text-xs">
                   <button
                     type="button"
                     onClick={playSantaliAudio}
                     className={cn(
-                      "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all",
+                      "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer",
                       speakingKey === "sat"
                         ? "bg-emerald text-white border-emerald ring-2 ring-emerald-200"
                         : "bg-white text-emerald-900 border-[#D8CEC0] hover:bg-[#F4EFE6] active:scale-95"
                     )}
-                    title="Listen to Santali pronunciation"
+                    title="Pronounce in Santali"
                   >
                     <Volume2 className={cn("w-4 h-4", speakingKey === "sat" && "animate-bounce text-white")} />
-                    <span>{speakingKey === "sat" ? "Speaking..." : "Pronounce (Santali)"}</span>
+                    <span>{speakingKey === "sat" ? t("flashcards_speaking") : t("flashcards_pronounce_sat")}</span>
                   </button>
 
                   <span className="text-[11px] text-[#8C7D6B] flex items-center gap-1 font-medium">
                     <Rotate3D className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Click to flip card</span>
+                    <span>{t("flashcards_flip_prompt")}</span>
                   </span>
                 </div>
               </div>
 
-              {/* ============================================================== */}
-              {/* BACK: Physical Study Card Reverse (Hindi + English with Vocals) */}
-              {/* ============================================================== */}
+              {/* ─────────────────────────────────────────────────────────────
+                  BACK: Flipped to reveal English & Hindi with pronunciations
+                  ───────────────────────────────────────────────────────────── */}
               <div
-                className="absolute inset-0 rounded-2xl bg-[#FFFDF8] border-2 border-[#DFD6C6] shadow-[0_5px_16px_rgba(40,30,15,0.07),0_1px_2px_rgba(40,30,15,0.05)] flex flex-col justify-between overflow-hidden text-ink"
-                style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+                className="absolute inset-0 rounded-2xl bg-[#FFFDF8] border-2 border-[#DFD6C6] shadow-sm flex flex-col justify-between overflow-hidden"
+                style={{
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                }}
               >
-                {/* Header */}
+                {/* Header on Back */}
                 <div className="px-6 pt-4 pb-2 border-b border-[#E8DFD0] flex items-center justify-between bg-[#FAF6EC]/60">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#E5DDD0] border border-[#C8BEB0]" />
-                    <span className="text-[11px] font-bold tracking-widest text-[#7A6B58] uppercase">
-                      TRANSLATIONS &amp; VOCALS
-                    </span>
-                  </div>
-
-                  <span className="text-[10px] text-[#8C7D6B] font-mono font-medium">
-                    SIDE B
+                  <span className="text-[11px] font-bold tracking-widest text-[#7A6B58] uppercase">
+                    {t("flashcards_meanings_heading")}
+                  </span>
+                  <span className="text-[10px] bg-[#EFE9DC] text-[#6E5F4E] px-2 py-0.5 rounded font-mono font-medium">
+                    #{index + 1}
                   </span>
                 </div>
 
-                {/* Ruled Card Sections for Hindi & English */}
-                <div className="my-auto px-6 py-2 divide-y divide-[#EAE2D5]">
-                  {/* HINDI SECTION WITH DEDICATED VOCALS */}
-                  <div className="py-3 flex items-center justify-between gap-4">
-                    <div className="space-y-0.5 text-left">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#8A7965] block">
-                        Hindi · हिंदी
-                      </span>
-                      <p className="font-display text-2xl sm:text-3xl font-bold text-[#1F1A12] leading-tight">
-                        {card.back.hindi}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={playHindiAudio}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all shrink-0",
-                        speakingKey === "hi"
-                          ? "bg-amber-600 text-white border-amber-600 ring-2 ring-amber-200"
-                          : "bg-white text-amber-900 border-[#D8CEC0] hover:bg-[#F9F4EB] active:scale-95"
-                      )}
-                      title="Listen to Hindi pronunciation"
-                    >
-                      <Volume2 className={cn("w-4 h-4", speakingKey === "hi" && "animate-bounce text-white")} />
-                      <span>{speakingKey === "hi" ? "Speaking..." : "Listen (हिंदी)"}</span>
-                    </button>
-                  </div>
-
-                  {/* ENGLISH SECTION WITH DEDICATED VOCALS */}
-                  <div className="py-3 flex items-center justify-between gap-4">
-                    <div className="space-y-0.5 text-left">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#8A7965] block">
-                        English
-                      </span>
-                      <p className="font-serif text-xl sm:text-2xl font-bold text-[#2A231A] leading-tight">
+                {/* Center: English and Hindi with Individual Audio Buttons */}
+                <div className="flex flex-col items-center justify-center text-center my-auto px-6 py-4 space-y-3.5">
+                  {/* English Translation */}
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">
+                      English Translation
+                    </span>
+                    <div className="flex items-center justify-center gap-2 pt-0.5">
+                      <p className="text-2xl sm:text-3xl font-bold text-[#1E1B15]">
                         {card.back.english}
                       </p>
+                      <button
+                        type="button"
+                        onClick={playEnglishAudio}
+                        className={cn(
+                          "p-1.5 rounded-full border text-gray-600 hover:text-emerald cursor-pointer transition-colors",
+                          speakingKey === "en" ? "bg-emerald-50 border-emerald-300 text-emerald" : "border-gray-200 bg-white"
+                        )}
+                        title="Pronounce in English"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
                     </div>
+                  </div>
 
-                    <button
-                      type="button"
-                      onClick={playEnglishAudio}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all shrink-0",
-                        speakingKey === "en"
-                          ? "bg-slate-700 text-white border-slate-700 ring-2 ring-slate-200"
-                          : "bg-white text-slate-800 border-[#D8CEC0] hover:bg-[#F4EFF7] active:scale-95"
-                      )}
-                      title="Listen to English pronunciation"
-                    >
-                      <Volume2 className={cn("w-4 h-4", speakingKey === "en" && "animate-bounce text-white")} />
-                      <span>{speakingKey === "en" ? "Speaking..." : "Listen (English)"}</span>
-                    </button>
+                  {/* Hindi Translation */}
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400 block">
+                      Hindi Translation (हिन्दी)
+                    </span>
+                    <div className="flex items-center justify-center gap-2 pt-0.5">
+                      <p className="text-xl sm:text-2xl font-semibold text-[#3D352A]">
+                        {card.back.hindi}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={playHindiAudio}
+                        className={cn(
+                          "p-1.5 rounded-full border text-gray-600 hover:text-emerald cursor-pointer transition-colors",
+                          speakingKey === "hi" ? "bg-emerald-50 border-emerald-300 text-emerald" : "border-gray-200 bg-white"
+                        )}
+                        title="Pronounce in Hindi"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Rural / Contextual sentence */}
+                  <div className="p-2 bg-amber-50/70 border border-amber-200/60 rounded text-xs text-amber-900 max-w-sm">
+                    <strong>Santali:</strong> {card.front.santhaliRoman} · {card.back.english} ({card.back.hindi})
                   </div>
                 </div>
 
                 {/* Footer on Back */}
-                <div className="px-6 py-2.5 border-t border-[#EDE5D8] bg-[#FAF6EE]/70 flex items-center justify-between text-xs">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Play both in succession
-                      playHindiAudio();
-                      setTimeout(() => playEnglishAudio(), 1300);
-                    }}
-                    className="inline-flex items-center gap-1 text-[11px] text-[#7A6A58] hover:text-[#2A2218] font-medium underline"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Play Both (Hindi + English)</span>
-                  </button>
-
+                <div className="px-6 py-3 border-t border-[#EDE5D8] bg-[#FAF6EE]/70 flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-[#8C7D6B] font-medium">
+                    Ol Chiki: <strong className="olchiki font-bold">{card.front.santhaliOlChiki}</strong>
+                  </span>
                   <span className="text-[11px] text-[#8C7D6B] flex items-center gap-1 font-medium">
                     <Rotate3D className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Click to flip front</span>
+                    <span>{t("flashcards_flip_back")}</span>
                   </span>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Action grading buttons */}
+          <div className="flex items-center justify-between gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => markReview("practice")}
+              className="flex-1 bg-white border-amber-300 text-amber-800 hover:bg-amber-50 text-xs h-9 cursor-pointer gap-1.5 font-semibold"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              <span>{t("flashcards_needs_practice")}</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => markReview("right")}
+              className="flex-1 bg-emerald hover:bg-emerald/90 text-white text-xs h-9 gap-1.5 cursor-pointer font-semibold shadow-xs"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{t("flashcards_know_this")}</span>
+            </Button>
+          </div>
+
+          {/* Bottom stack navigation */}
+          <div className="flex items-center justify-between pt-3 text-xs text-gray-500">
+            <button
+              type="button"
+              onClick={handlePrevCard}
+              disabled={index === 0}
+              className="hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer font-medium"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            <span className="text-[11px] font-mono text-gray-400">
+              Stack #{stackPage} · {seenCardIds.size} reviewed
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setStackPage((p) => p + 1)}
+              className="hover:text-emerald flex items-center gap-1 cursor-pointer font-semibold text-emerald"
+            >
+              <span>Next Stack</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       ) : null}
-
-      {/* Review Actions Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={() => mark("practice")}
-            className="flex-1 sm:flex-none text-xs text-amber-900 border-[#D8CEC0] hover:bg-[#FAF6EE]"
-          >
-            <RotateCcw className="w-3.5 h-3.5 mr-1 text-amber-700" />
-            <span>{t("flashcards_needs_practice")}</span>
-          </Button>
-
-          <Button
-            variant="primary"
-            onClick={() => mark("right")}
-            className="flex-1 sm:flex-none text-xs"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-            <span>{t("flashcards_got_it")}</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            onClick={nextCard}
-            size="sm"
-            aria-label="Skip card"
-            title="Next card"
-            className="text-gray-500"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-gray-500 self-end sm:self-auto font-medium">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="hover:underline disabled:opacity-40 disabled:no-underline cursor-pointer"
-          >
-            Previous
-          </button>
-          <span>·</span>
-          <span>Stack #{page}</span>
-          <span>·</span>
-          <button
-            type="button"
-            onClick={() => setPage((p) => p + 1)}
-            className="hover:underline text-emerald font-semibold cursor-pointer"
-          >
-            Next Stack
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

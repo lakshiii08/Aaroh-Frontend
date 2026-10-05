@@ -74,7 +74,7 @@ export function SideNavBase({
             <div>
               <span className="font-display font-bold text-base tracking-tight text-ink block leading-none">AAROH</span>
               <span className="text-[10px] text-gray-400 font-medium leading-none block mt-0.5">
-                {role === "student" ? "Student Portal" : "Teacher Portal"}
+                {role === "student" ? t("portal_student") : t("portal_teacher")}
               </span>
             </div>
           </Link>
