@@ -105,7 +105,7 @@ export default function TeacherMaterialsPage() {
   const handleUploadMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadedFile) {
-      setUploadError("Please select a curriculum file (.pdf, .txt, .png, .jpg) to upload.");
+      setUploadError("Please select a curriculum file (.pdf, .pptx, .txt, .md) to upload.");
       return;
     }
 
@@ -447,12 +447,12 @@ export default function TeacherMaterialsPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-gray-700 block">
-                    Select Textbook File (PDF, Image, or Text) <span className="text-rose-600">*</span>
+                    Select Textbook File (PDF, PPTX, Text, or Markdown) <span className="text-rose-600">*</span>
                   </label>
                   <input
                     type="file"
                     required
-                    accept=".pdf,.txt,.png,.jpg,.jpeg"
+                    accept=".pdf,.pptx,.txt,.md"
                     onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none text-gray-700 bg-white file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
                   />

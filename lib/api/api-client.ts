@@ -1,19 +1,40 @@
 /**
- * AAROH Centralized Real API Client
- * Connects Frontend directly to FastAPI Backend (/api/v1) and Aaroh-AI core.
- * Strictly no mock data or hardcoded simulations.
+ * Centralized AAROH API client.
+ * Talks to the FastAPI backend under /api/v1 with environment-driven hosts.
  */
 
-const API_BASE_URL = typeof window !== "undefined"
-  ? (process.env.NEXT_PUBLIC_API_URL || "/api/v1")
-  : (process.env.BACKEND_INTERNAL_URL ? `${process.env.BACKEND_INTERNAL_URL}/api/v1` : "http://127.0.0.1:8000/api/v1");
+const API_PREFIX = "/api/v1";
+
+function trimTrailingSlash(value: string): string {
+  return value.replace(/\/+$/, "");
+}
+
+function withApiPrefix(baseUrl: string): string {
+  const clean = trimTrailingSlash(baseUrl);
+  return clean.endsWith(API_PREFIX) ? clean : `${clean}${API_PREFIX}`;
+}
+
+function resolveApiBaseUrl(): string {
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.BACKEND_INTERNAL_URL ||
+    "";
+
+  if (!configuredUrl.trim()) {
+    return API_PREFIX;
+  }
+
+  return withApiPrefix(configuredUrl.trim());
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export interface APIErrorResponse {
   success: false;
   error: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -25,6 +46,8 @@ export interface UserSession {
   district_id?: string;
   roll_number?: string;
 }
+
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 class APIClient {
   private getAccessToken(): string | null {
@@ -51,36 +74,38 @@ class APIClient {
     const raw = localStorage.getItem("aaroh_user");
     if (!raw) return null;
     try {
-      return JSON.parse(raw);
+      return JSON.parse(raw) as UserSession;
     } catch {
       return null;
     }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const token = this.getAccessToken();
+  private buildUrl(endpoint: string): string {
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    return `${API_BASE_URL}${cleanEndpoint}`;
+  }
 
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const token = this.getAccessToken();
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
     };
 
     if (!(options.body instanceof FormData)) {
-      headers["Content-Type"] = "application/json";
+      headers["Content-Type"] = headers["Content-Type"] || "application/json";
     }
 
-    if (token && !headers["Authorization"]) {
-      headers["Authorization"] = `Bearer ${token}`;
+    if (token && !headers.Authorization) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(this.buildUrl(endpoint), {
       ...options,
       headers,
     });
 
     if (response.status === 401) {
-      // Unauthorized, handle redirect or clear session if needed
-      console.warn("API request unauthorized (401) on", endpoint);
+      this.clearTokens();
     }
 
     const data = await response.json().catch(() => null);
@@ -88,7 +113,11 @@ class APIClient {
     if (!response.ok || (data && data.success === false)) {
       const errorMessage = data?.error?.message || `HTTP ${response.status}: Failed to communicate with server.`;
       const errorCode = data?.error?.code || "REQUEST_FAILED";
-      const err = new Error(errorMessage) as any;
+      const err = new Error(errorMessage) as Error & {
+        code?: string;
+        status?: number;
+        details?: unknown;
+      };
       err.code = errorCode;
       err.status = response.status;
       err.details = data?.error?.details;
@@ -98,22 +127,26 @@ class APIClient {
     return (data?.data ?? data) as T;
   }
 
-  // ── Authentication ────────────────────────────────────────────────────────
+  private post<T>(endpoint: string, body?: unknown, method: HttpMethod = "POST"): Promise<T> {
+    return this.request<T>(endpoint, {
+      method,
+      body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
+    });
+  }
+
   auth = {
     login: async (login_id: string, password: string, school_code?: string) => {
-      const res = await this.request<{
+      const res = await this.post<{
         access_token: string;
         refresh_token: string;
         user_id: string;
-        role: "ADMIN" | "DISTRICT_ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
+        role: UserSession["role"];
         name: string;
         school_id?: string;
         district_id?: string;
         roll_number?: string;
-      }>("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ login_id, password, school_code }),
-      });
+      }>("/auth/login", { login_id, password, school_code });
+
       this.setTokens(res.access_token, res.refresh_token, {
         user_id: res.user_id,
         role: res.role,
@@ -126,58 +159,24 @@ class APIClient {
     },
 
     studentLogin: async (roll_number: string, password: string, school_code: string) => {
-      try {
-        const res = await this.request<{
-          access_token: string;
-          refresh_token: string;
-          user_id: string;
-          role: "STUDENT";
-          name: string;
-          school_id: string;
-          roll_number: string;
-        }>("/auth/student-login", {
-          method: "POST",
-          body: JSON.stringify({ roll_number, password, school_code }),
-        });
-        this.setTokens(res.access_token, res.refresh_token, {
-          user_id: res.user_id,
-          role: "STUDENT",
-          name: res.name,
-          school_id: res.school_id,
-          roll_number: res.roll_number,
-        });
-        return res;
-      } catch (backendErr) {
-        // Fallback to Next.js local auth endpoint for seamless local development
-        console.warn("Backend studentLogin failed, attempting Next.js local fallback:", backendErr);
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ role: "student", rollNo: roll_number, pin: password }),
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          throw backendErr;
-        }
-        const fallbackSession: UserSession = {
-          user_id: data.user?.id || "s1",
-          role: "STUDENT",
-          name: data.user?.name || "Sona Murmu",
-          school_id: data.user?.school || "Rajkiya Prathmik Vidyalaya, Dumka",
-          roll_number: data.user?.rollNo || roll_number,
-        };
-        const token = "demo_student_token_" + Date.now();
-        this.setTokens(token, undefined, fallbackSession);
-        return {
-          access_token: token,
-          refresh_token: "demo_student_refresh",
-          user_id: fallbackSession.user_id,
-          role: "STUDENT" as const,
-          name: fallbackSession.name,
-          school_id: fallbackSession.school_id!,
-          roll_number: fallbackSession.roll_number!,
-        };
-      }
+      const res = await this.post<{
+        access_token: string;
+        refresh_token: string;
+        user_id: string;
+        role: "STUDENT";
+        name: string;
+        school_id: string;
+        roll_number: string;
+      }>("/auth/student-login", { roll_number, password, school_code });
+
+      this.setTokens(res.access_token, res.refresh_token, {
+        user_id: res.user_id,
+        role: "STUDENT",
+        name: res.name,
+        school_id: res.school_id,
+        roll_number: res.roll_number,
+      });
+      return res;
     },
 
     signupTeacher: async (data: {
@@ -189,29 +188,19 @@ class APIClient {
       employee_id?: string;
       assigned_grades?: number[];
       subjects?: string[];
-    }) => {
-      return this.request("/auth/teacher/signup", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    },
+    }) => this.post("/auth/teacher/signup", data),
 
-    getMe: async () => {
-      return this.request<UserSession>("/auth/me");
-    },
+    getMe: async () => this.request<UserSession>("/auth/me"),
 
     logout: async () => {
       try {
-        await this.request("/auth/logout", { method: "POST" });
-      } catch (err) {
-        console.warn("Logout error:", err);
+        await this.post("/auth/logout");
       } finally {
         this.clearTokens();
       }
     },
   };
 
-  // ── Teachers ──────────────────────────────────────────────────────────────
   teachers = {
     listStudents: async (grade_level?: number) => {
       const q = grade_level ? `?grade_level=${grade_level}` : "";
@@ -225,71 +214,92 @@ class APIClient {
       school_id: string;
       village?: string;
       section?: string;
-    }) => {
-      return this.request<{
-        student_id: string;
-        name: string;
-        roll_number: string;
-        login_id: string;
-        temporary_password: string;
-        school_id: string;
-        school_code?: string;
-        created_at: string;
-      }>("/teachers/students", {
-        method: "POST",
-        body: JSON.stringify(studentData),
-      });
-    },
+    }) => this.post<{
+      student_id: string;
+      name: string;
+      roll_number: string;
+      login_id: string;
+      temporary_password: string;
+      school_id: string;
+      school_code?: string;
+      created_at: string;
+    }>("/teachers/students", studentData),
 
-    getStudent: async (student_id: string) => {
-      return this.request<any>(`/teachers/students/${student_id}`);
-    },
+    getStudent: async (student_id: string) => this.request<any>(`/teachers/students/${student_id}`),
 
-    resetPassword: async (student_id: string) => {
-      return this.request<{
-        student_id: string;
-        name: string;
-        roll_number: string;
-        login_id: string;
-        temporary_password: string;
-      }>(`/teachers/students/${student_id}/reset-password`, {
-        method: "POST",
-      });
-    },
+    resetPassword: async (student_id: string) => this.post<{
+      student_id: string;
+      name: string;
+      roll_number: string;
+      login_id: string;
+      temporary_password: string;
+    }>(`/teachers/students/${student_id}/reset-password`),
 
-    getAnalytics: async () => {
-      return this.request<{
-        school_id: string;
-        total_students: number;
-        class_average_mastery: number;
-        learning_gaps_count: number;
-        weak_concepts: any[];
-      }>("/teachers/analytics");
-    },
+    getAnalytics: async () => this.request<{
+      school_id: string;
+      total_students: number;
+      class_average_mastery: number;
+      learning_gaps_count: number;
+      weak_concepts: any[];
+    }>("/teachers/analytics"),
   };
 
-  // ── Students ──────────────────────────────────────────────────────────────
   students = {
-    getMe: async () => {
-      return this.request<any>("/students/me");
-    },
+    getMe: async () => this.request<any>("/students/me"),
 
     getAssignedLessons: async (grade_level?: number) => {
       const q = grade_level ? `?grade_level=${grade_level}` : "";
       return this.request<any[]>(`/students/lessons${q}`);
     },
 
-    getProgress: async () => {
-      return this.request<{
-        student_id: string;
-        overall_mastery: number;
-        quizzes_taken: number;
-        concept_breakdown: any[];
-      }>("/students/progress");
+    getProgress: async () => this.request<{
+      student_id: string;
+      overall_mastery: number;
+      quizzes_taken: number;
+      concept_breakdown: any[];
+    }>("/students/progress"),
+  };
+
+  content = {
+    upload: async (file: File, grade_hint = "Grade 3", subject_hint = "Environmental Studies") => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("grade_hint", grade_hint);
+      formData.append("subject_hint", subject_hint);
+
+      return this.post<{
+        document_id: string;
+        filename: string;
+        status: string;
+        total_pages: number;
+        total_chunks: number;
+        total_concepts: number;
+      }>("/content/upload", formData);
+    },
+
+    listDocuments: async () => this.request<any[]>("/content/documents"),
+    getDocument: async (document_id: string) => this.request<any>(`/content/documents/${document_id}`),
+    getConcepts: async (document_id: string) => this.request<{
+      document_id: string;
+      total_concepts: number;
+      concepts: any[];
+    }>(`/content/documents/${document_id}/concepts`),
+
+    search: async (params: {
+      query: string;
+      top_k?: number;
+      grade_level?: number;
+      subject?: string;
+    } | string, top_k = 5) => {
+      const body = typeof params === "string" ? { query: params, top_k } : params;
+      return this.post<{
+        query: string;
+        total_results: number;
+        results: any[];
+      }>("/content/search", body);
     },
   };
 
-  // ── Real Indic Translation ────────────────────────────────────────────────
   translation = {
     translate: async (params: {
       text: string;
@@ -297,107 +307,83 @@ class APIClient {
       target_lang?: string;
       target_dialect?: string;
       apply_glossary?: boolean;
-    }) => {
-      return this.request<{
-        original_text: string;
-        translated_text: string;
-        source_lang: string;
-        target_lang: string;
-        applied_glossary_terms: any[];
-        latency_ms: number;
-        backend_used: string;
-      }>("/translation/translate", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<{
+      original_text: string;
+      translated_text: string;
+      source_lang: string;
+      target_lang: string;
+      applied_glossary_terms: any[];
+      latency_ms: number;
+      backend_used: string;
+    }>("/translation/translate", params),
 
     batch: async (params: {
       texts: string[];
       source_lang?: string;
       target_lang?: string;
       target_dialect?: string;
-    }) => {
-      return this.request<{
-        total_count: number;
-        total_time_ms: number;
-        results: Array<{
-          original_text: string;
-          translated_text: string;
-          applied_glossary_terms: any[];
-          latency_ms: number;
-        }>;
-      }>("/translation/batch", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<{
+      total_count: number;
+      total_time_ms: number;
+      results: Array<{
+        original_text: string;
+        translated_text: string;
+        applied_glossary_terms: any[];
+        latency_ms: number;
+      }>;
+    }>("/translation/batch", params),
 
-    getLanguages: async () => {
-      return this.request<{
-        supported_languages: string[];
-        default_source: string;
-        default_target: string;
-      }>("/translation/languages");
-    },
+    getLanguages: async () => this.request<{
+      supported_languages: string[];
+      default_source: string;
+      default_target: string;
+    }>("/translation/languages"),
 
     lookupGlossary: async (term: string, source_lang = "en", target_lang = "hi") => {
-      return this.request<any>(
-        `/translation/glossary/lookup?term=${encodeURIComponent(term)}&source_lang=${source_lang}&target_lang=${target_lang}`
-      );
+      const q = new URLSearchParams({ term, source_lang, target_lang });
+      return this.request<any>(`/translation/glossary/lookup?${q.toString()}`);
     },
+
+    addGlossaryTerm: async (data: {
+      source_term: string;
+      translated_term: string;
+      source_lang?: string;
+      target_lang?: string;
+      domain?: string;
+      dialects?: Record<string, string>;
+      phonetic_hint?: string;
+      notes?: string;
+    }) => this.post<any>("/translation/glossary/term", data),
+
+    translateLesson: async (document_id: string, data: {
+      target_lang?: string;
+      target_dialect?: string;
+    }) => this.post<any>(`/translation/lessons/${document_id}`, data),
   };
 
-  // ── Content & Ingestion ───────────────────────────────────────────────────
-  content = {
-    upload: async (file: File, grade_hint = "Grade 4", subject_hint = "Science") => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("grade_hint", grade_hint);
-      formData.append("subject_hint", subject_hint);
+  simplification = {
+    localizeConcept: async (concept_code: string, data: {
+      target_language?: string;
+      target_dialect?: string;
+      grade_level?: number;
+      force_regenerate?: boolean;
+    }) => this.post<any>(`/simplification/concepts/${concept_code}`, data),
 
-      return this.request<{
-        document_id: string;
-        filename: string;
-        status: string;
-        total_pages: number;
-        total_chunks: number;
-        total_concepts: number;
-      }>("/content/upload", {
-        method: "POST",
-        body: formData,
-      });
-    },
+    localizeDocument: async (document_id: string, data: {
+      target_language?: string;
+      target_dialect?: string;
+    }) => this.post<any>(`/simplification/documents/${document_id}`, data),
 
-    listDocuments: async () => {
-      return this.request<any[]>("/content/documents");
-    },
+    runLangGraphAgent: async (concept_code: string, data: {
+      target_language?: string;
+      target_dialect?: string;
+      grade_level?: number;
+      force_regenerate?: boolean;
+    }) => this.post<any>(`/simplification/langgraph/concepts/${concept_code}`, data),
 
-    getDocument: async (document_id: string) => {
-      return this.request<any>(`/content/documents/${document_id}`);
-    },
-
-    getConcepts: async (document_id: string) => {
-      return this.request<{
-        document_id: string;
-        total_concepts: number;
-        concepts: any[];
-      }>(`/content/documents/${document_id}/concepts`);
-    },
-
-    search: async (query: string, top_k = 5) => {
-      return this.request<{
-        query: string;
-        total_results: number;
-        results: any[];
-      }>("/content/search", {
-        method: "POST",
-        body: JSON.stringify({ query, top_k }),
-      });
-    },
+    getCacheStatus: async () => this.request<any>("/simplification/cache/status"),
   };
 
-  // ── Assessment & Quizzes ──────────────────────────────────────────────────
   assessment = {
     generateQuiz: async (params: {
       concept_code: string;
@@ -405,58 +391,34 @@ class APIClient {
       target_dialect?: string;
       grade_level?: number;
       student_id?: string;
-    }) => {
-      return this.request<{
-        quiz_id: string;
-        concept_code: string;
-        concept_name: string;
-        total_questions: number;
-        questions: any[];
-      }>("/assessment/quizzes/generate", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<{
+      quiz_id: string;
+      concept_code: string;
+      concept_name: string;
+      total_questions: number;
+      questions: any[];
+    }>("/assessment/quizzes/generate", params),
 
-    getQuiz: async (quiz_id: string) => {
-      return this.request<any>(`/assessment/quizzes/${quiz_id}`);
-    },
+    submitQuiz: async (quiz_id: string, student_id: string, answers: Record<string, string>) => this.post<{
+      submission_id: string;
+      quiz_id: string;
+      student_id: string;
+      score_pct: number;
+      correct_count: number;
+      total_questions: number;
+      concept_mastery_level: number;
+      weak_concepts_detected: string[];
+      remedial_recommended: boolean;
+      answers_evaluation: any[];
+    }>(`/assessment/quizzes/${quiz_id}/submit`, { student_id, answers }),
 
-    submitQuiz: async (quiz_id: string, student_id: string, answers: Record<string, string>) => {
-      return this.request<{
-        submission_id: string;
-        quiz_id: string;
-        student_id: string;
-        score_pct: number;
-        correct_count: number;
-        total_questions: number;
-        concept_mastery_level: number;
-        weak_concepts_detected: string[];
-        remedial_recommended: boolean;
-        answers_evaluation: any[];
-      }>(`/assessment/quizzes/${quiz_id}/submit`, {
-        method: "POST",
-        body: JSON.stringify({ student_id, answers }),
-      });
-    },
+    getStudentHistory: async (student_id: string) =>
+      this.request<any[]>(`/assessment/students/${student_id}/history`),
 
-    getStudentHistory: async (student_id: string) => {
-      return this.request<any[]>(`/assessment/students/${student_id}/history`);
-    },
-
-    getTeacherReport: async (concept_code: string) => {
-      return this.request<{
-        concept_code: string;
-        total_attempts: number;
-        average_score_pct: number;
-        pass_rate_pct: number;
-        at_risk_students_count: number;
-        misconceptions_detected: any[];
-      }>(`/assessment/teachers/reports/${concept_code}`);
-    },
+    getTeacherReport: async (concept_code: string) =>
+      this.request<any>(`/assessment/teachers/reports/${concept_code}`),
   };
 
-  // ── Real Assignments & Worksheets ─────────────────────────────────────────
   assignments = {
     generate: async (params: {
       document_id?: string;
@@ -468,25 +430,20 @@ class APIClient {
       number_of_questions?: number;
       difficulty?: "easy" | "medium" | "hard";
       title?: string;
-    }) => {
-      return this.request<{
-        id: string;
-        title: string;
-        subject: string;
-        grade: number;
-        language: string;
-        dialect?: string;
-        difficulty: string;
-        total_questions: number;
-        total_marks: number;
-        pdf_download_url: string;
-        created_at: string;
-        items: any[];
-      }>("/assignments/generate", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<{
+      id: string;
+      title: string;
+      subject: string;
+      grade: number;
+      language: string;
+      dialect?: string;
+      difficulty: string;
+      total_questions: number;
+      total_marks: number;
+      pdf_download_url: string;
+      created_at: string;
+      items: any[];
+    }>("/assignments/generate", params),
 
     list: async (subject?: string, grade?: number) => {
       const q = new URLSearchParams();
@@ -496,144 +453,85 @@ class APIClient {
       return this.request<any[]>(`/assignments${qs}`);
     },
 
-    get: async (assignment_id: string) => {
-      return this.request<any>(`/assignments/${assignment_id}`);
-    },
+    get: async (assignment_id: string) => this.request<any>(`/assignments/${assignment_id}`),
 
     submit: async (assignment_id: string, data: {
       student_id: string;
       student_name?: string;
       answers: Record<string, string>;
-    }) => {
-      return this.request<{
-        assignment_id: string;
-        student_id: string;
-        total_questions: number;
-        evaluated_score: number;
-        score_percentage: number;
-        grade: string;
-        mastery_status: string;
-        concept_gaps: string[];
-        feedback: string;
-      }>(`/assignments/${assignment_id}/submit`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    },
+    }) => this.post<{
+      assignment_id: string;
+      student_id: string;
+      total_questions: number;
+      evaluated_score: number;
+      score_percentage: number;
+      grade: string;
+      mastery_status: string;
+      concept_gaps: string[];
+      feedback: string;
+    }>(`/assignments/${assignment_id}/submit`, data),
 
-    getPdfUrl: (assignment_id: string) => {
-      return `${API_BASE_URL}/assignments/${assignment_id}/pdf`;
-    },
+    getPdfUrl: (assignment_id: string) => this.buildUrl(`/assignments/${assignment_id}/pdf`),
   };
 
-  // ── Voice & Speech Intelligence ───────────────────────────────────────────
   voice = {
     synthesize: async (params: {
       text: string;
       section_name?: string;
       target_language?: string;
       target_dialect?: string;
-    }) => {
-      return this.request<{
-        segment_id: string;
-        duration_seconds: number;
-        audio_file_path: string;
-        stream_url: string;
-      }>("/voice/synthesize", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<{
+      segment_id: string;
+      duration_seconds: number;
+      audio_file_path: string;
+      stream_url: string;
+    }>("/voice/synthesize", params),
 
-    stt: async (audioBlob: Blob, language_code = "hi") => {
+    transcribe: async (audioBlob: Blob, language_code = "hi") => {
       const formData = new FormData();
       formData.append("audio_file", audioBlob, "recording.wav");
       formData.append("language_code", language_code);
 
-      return this.request<{
+      return this.post<{
         transcribed_text: string;
         detected_language: string;
         confidence_score: number;
         latency_ms: number;
-      }>("/voice/stt", {
-        method: "POST",
-        body: formData,
-      });
+      }>("/voice/transcribe", formData);
     },
 
-    generateLesson: async (concept_code: string, target_language = "hi", grade_level = 3) => {
-      return this.request<{
+    stt: async (audioBlob: Blob, language_code = "hi") =>
+      this.voice.transcribe(audioBlob, language_code),
+
+    generateLesson: async (concept_code: string, target_language = "hi", grade_level = 3, target_dialect?: string) =>
+      this.post<{
         concept_code: string;
         concept_name: string;
         total_duration_seconds: number;
         audio_segments: any[];
-      }>(`/voice/lessons/${concept_code}`, {
-        method: "POST",
-        body: JSON.stringify({ target_language, grade_level }),
-      });
-    },
+      }>(`/voice/lessons/${concept_code}`, { target_language, target_dialect, grade_level }),
 
-    getStreamUrl: (filename: string) => {
-      return `${API_BASE_URL}/voice/stream/${filename}`;
-    },
-  };
-
-  // ── Gamification & Visual Flashcards ──────────────────────────────────────
-  gamification = {
-    generateFlashcards: async (params: {
-      concept_code: string;
+    submitOralQuizAudio: async (data: {
+      quiz_id: string;
+      question_id: string;
+      student_id: string;
+      expected_answer: string;
+      audio_file: Blob;
       target_language?: string;
-      target_dialect?: string;
     }) => {
-      return this.request<{
-        deck_id: string;
-        concept_code: string;
-        target_language: string;
-        total_cards: number;
-        cards: Array<{
-          card_id: string;
-          term_source: string;
-          term_translated: string;
-          dialect_terms?: Record<string, string>;
-          image_prompt?: string;
-          visual_emoji?: string;
-          phonetic_transliteration?: string;
-          child_explanation?: string;
-        }>;
-        html_preview_url?: string;
-      }>("/gamification/flashcards/generate", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
+      const formData = new FormData();
+      formData.append("quiz_id", data.quiz_id);
+      formData.append("question_id", data.question_id);
+      formData.append("student_id", data.student_id);
+      formData.append("expected_answer", data.expected_answer);
+      formData.append("target_language", data.target_language || "hi");
+      formData.append("audio_file", data.audio_file, "oral-answer.wav");
+      return this.post<any>("/voice/oral-quiz/submit-audio", formData);
     },
 
-    getStudentPortfolio: async (student_id: string) => {
-      return this.request<any>(`/gamification/students/${student_id}/portfolio`);
-    },
-
-    recordActivity: async (student_id: string, data: {
-      student_name: string;
-      school_id: string;
-      grade_level: number;
-      activity_type: string;
-      concept_code: string;
-    }) => {
-      return this.request<any>(`/gamification/students/${student_id}/activity`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    },
-
-    getLeaderboard: async (school_id: string) => {
-      return this.request<{
-        school_id: string;
-        total_students: number;
-        leaderboard: any[];
-      }>(`/gamification/leaderboards/${school_id}`);
-    },
+    getStreamUrl: (filename: string) => this.buildUrl(`/voice/stream/${encodeURIComponent(filename)}`),
   };
 
-  // ── Teacher Copilot & Offline Edge ────────────────────────────────────────
   copilot = {
     generateLessonPlan: async (params: {
       concept_code: string;
@@ -641,47 +539,115 @@ class APIClient {
       target_language?: string;
       target_dialect?: string;
       duration_mins?: number;
-    }) => {
-      return this.request<any>("/copilot/lesson-plans/generate", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<any>("/copilot/lesson-plans/generate", params),
 
     generateRemedialAid: async (params: {
       concept_code: string;
       weak_bloom_level?: string;
       target_language?: string;
-    }) => {
-      return this.request<any>("/copilot/remedial-aid/generate", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<any>("/copilot/remedial-aid/generate", params),
 
     exportOfflinePackage: async (params: {
       grade_level: number;
       subject: string;
       target_language: string;
       target_dialect?: string;
-    }) => {
-      return this.request<{
-        bundle_id: string;
-        filename: string;
-        download_url: string;
-        size_bytes: number;
-      }>("/copilot/edge/packages/export", {
-        method: "POST",
-        body: JSON.stringify(params),
-      });
-    },
+    }) => this.post<{
+      bundle_id: string;
+      filename: string;
+      download_url: string;
+      size_bytes: number;
+    }>("/copilot/edge/packages/export", params),
 
-    getMasteryHeatmap: async () => {
-      return this.request<{
-        total_concepts: number;
-        mastery_heatmap: any[];
-      }>("/copilot/analytics/mastery-heatmap");
-    },
+    getPackageDownloadUrl: (filename: string) =>
+      this.buildUrl(`/copilot/edge/packages/download/${encodeURIComponent(filename)}`),
+
+    syncOfflineAttempts: async (params: {
+      batch_id: string;
+      device_id: string;
+      school_id: string;
+      submissions: any[];
+    }) => this.post<any>("/copilot/edge/sync/import", params),
+
+    getMasteryHeatmap: async () => this.request<{
+      total_concepts: number;
+      mastery_heatmap: any[];
+    }>("/copilot/analytics/mastery-heatmap"),
+  };
+
+  gamification = {
+    generateQuest: async (params: {
+      concept_code: string;
+      target_language?: string;
+      target_dialect?: string;
+    }) => this.post<any>("/gamification/quests/generate", params),
+
+    generateFlashcards: async (params: {
+      concept_code: string;
+      target_language?: string;
+      target_dialect?: string;
+    }) => this.post<{
+      deck_id: string;
+      concept_code: string;
+      target_language: string;
+      total_cards: number;
+      cards: Array<{
+        card_id: string;
+        term_source: string;
+        term_translated: string;
+        dialect_terms?: Record<string, string>;
+        image_prompt?: string;
+        visual_emoji?: string;
+        phonetic_transliteration?: string;
+        child_explanation?: string;
+      }>;
+      html_preview_url?: string;
+    }>("/gamification/flashcards/generate", params),
+
+    getDeckUrl: (filename: string) =>
+      this.buildUrl(`/gamification/flashcards/deck/${encodeURIComponent(filename)}`),
+
+    getStudentPortfolio: async (student_id: string) =>
+      this.request<any>(`/gamification/students/${student_id}/portfolio`),
+
+    recordActivity: async (student_id: string, data: {
+      student_name: string;
+      school_id: string;
+      grade_level: number;
+      activity_type: string;
+      concept_code: string;
+    }) => this.post<any>(`/gamification/students/${student_id}/activity`, data),
+
+    getLeaderboard: async (school_id: string) => this.request<{
+      school_id: string;
+      total_students: number;
+      leaderboard: any[];
+    }>(`/gamification/leaderboards/${school_id}`),
+  };
+
+  district = {
+    generateRemedialPathway: async (params: {
+      student_id: string;
+      student_name?: string;
+      concept_code: string;
+      weak_bloom_level?: string;
+      target_language?: string;
+    }) => this.post<any>("/district/interventions/generate-pathway", params),
+
+    sendParentVoiceNote: async (params: {
+      student_id: string;
+      student_name?: string;
+      parent_phone: string;
+      concept_code: string;
+      target_language?: string;
+      target_dialect?: string;
+    }) => this.post<any>("/district/parent-advisory/send-voice-note", params),
+
+    listPendingInterventions: async () =>
+      this.request<any>("/district/interventions/pending"),
+
+    getOverview: async () =>
+      this.request<any>("/district/analytics/overview"),
   };
 }
 

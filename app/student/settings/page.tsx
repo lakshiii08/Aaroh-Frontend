@@ -18,7 +18,7 @@ export default function StudentSettingsPage() {
     rollNo: "24",
     grade: "Grade 4",
     school: "Rajkiya Prathmik Vidyalaya, Dumka",
-    pin: "1234",
+    pin: "",
     language: "en",
     badges: 6,
     accuracy: 82,

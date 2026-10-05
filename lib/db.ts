@@ -438,6 +438,17 @@ export function generateUniquePIN(existingPINs: Set<string>): string {
   return (1000 + (Date.now() % 9000)).toString();
 }
 
+function createDefaultStudentPins(count: number): string[] {
+  const existingPINs = new Set<string>();
+  return Array.from({ length: count }, () => {
+    const pin = generateUniquePIN(existingPINs);
+    existingPINs.add(pin);
+    return pin;
+  });
+}
+
+const DEFAULT_STUDENT_PINS = createDefaultStudentPins(4);
+
 const DEFAULT_DATA: DBData = {
   subjects: [
     { id: "sub-1", name: "Mathematics", icon: "calculator", description: "Fractions, Algebra & Numbers", createdAt: "2026-09-01T10:00:00Z" },
@@ -879,7 +890,7 @@ const DEFAULT_DATA: DBData = {
     rollNo: "24",
     grade: "Grade 4",
     school: "Rajkiya Prathmik Vidyalaya, Dumka",
-    pin: "1234",
+    pin: DEFAULT_STUDENT_PINS[0],
     language: "en",
     badges: 6,
     accuracy: 82,
@@ -893,7 +904,7 @@ const DEFAULT_DATA: DBData = {
       rollNo: "24",
       grade: "Grade 4",
       school: "Rajkiya Prathmik Vidyalaya, Dumka",
-      pin: "1234",
+      pin: DEFAULT_STUDENT_PINS[0],
       language: "en",
       accuracy: 82,
       badges: 6,
@@ -908,7 +919,7 @@ const DEFAULT_DATA: DBData = {
       rollNo: "12",
       grade: "Grade 4",
       school: "Rajkiya Prathmik Vidyalaya, Dumka",
-      pin: "4821",
+      pin: DEFAULT_STUDENT_PINS[1],
       language: "sat",
       accuracy: 91,
       badges: 9,
@@ -923,7 +934,7 @@ const DEFAULT_DATA: DBData = {
       rollNo: "08",
       grade: "Grade 4",
       school: "Rajkiya Prathmik Vidyalaya, Dumka",
-      pin: "7319",
+      pin: DEFAULT_STUDENT_PINS[2],
       language: "hi",
       accuracy: 74,
       badges: 4,
@@ -938,7 +949,7 @@ const DEFAULT_DATA: DBData = {
       rollNo: "17",
       grade: "Grade 4",
       school: "Rajkiya Prathmik Vidyalaya, Dumka",
-      pin: "5602",
+      pin: DEFAULT_STUDENT_PINS[3],
       language: "en",
       accuracy: 86,
       badges: 7,
@@ -979,23 +990,29 @@ function readDB(): DBData {
         parsed.userProfile.school = "Rajkiya Prathmik Vidyalaya, Dumka";
       }
       if (!parsed.userProfile.pin) {
-        parsed.userProfile.pin = "1234";
+        const students = Array.isArray(parsed.students) ? parsed.students : [];
+        const matchingStudent = students.find((s: any) => s.id === parsed.userProfile.id);
+        const existingPINs = new Set<string>(students.map((s: any) => s.pin).filter(Boolean));
+        parsed.userProfile.pin = matchingStudent?.pin || generateUniquePIN(existingPINs);
       }
       if (!parsed.students || parsed.students.length === 0) {
         parsed.students = DEFAULT_DATA.students;
       } else {
         // Ensure each student has school, pin, language, createdAt
-        const existingPINs = new Set<string>();
-        parsed.students.forEach((s: any, idx: number) => {
+        const existingPINs = new Set<string>(parsed.students.map((s: any) => s.pin).filter(Boolean));
+        parsed.students.forEach((s: any) => {
           if (!s.school) s.school = "Rajkiya Prathmik Vidyalaya, Dumka";
           if (!s.pin) {
-            const defaultPins = ["1234", "4821", "7319", "5602"];
-            s.pin = defaultPins[idx % defaultPins.length] || generateUniquePIN(existingPINs);
+            s.pin = generateUniquePIN(existingPINs);
           }
           existingPINs.add(s.pin);
           if (!s.language) s.language = "en";
           if (!s.createdAt) s.createdAt = "2026-09-01T08:00:00Z";
         });
+        const activeStudent = parsed.students.find((s: any) => s.id === parsed.userProfile.id);
+        if (activeStudent) {
+          parsed.userProfile.pin = activeStudent.pin;
+        }
       }
       if (!parsed.teacherProfile) {
         parsed.teacherProfile = DEFAULT_DATA.teacherProfile;

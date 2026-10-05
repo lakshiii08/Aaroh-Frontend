@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sprout, Check, AlertCircle, Sparkles, Globe } from "lucide-react";
+import { Sprout, AlertCircle, Sparkles, Globe, GraduationCap, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
 import { api } from "@/lib/api";
@@ -10,52 +10,23 @@ import { cn } from "@/lib/utils";
 
 type Role = "student" | "teacher";
 
+const DEMO_SCHOOL_CODE = process.env.NEXT_PUBLIC_DEMO_SCHOOL_CODE || "DEMO01";
+const DEMO_STUDENT_ROLL_NUMBER = process.env.NEXT_PUBLIC_DEMO_STUDENT_ROLL_NUMBER || "24";
+const DEMO_STUDENT_PASSWORD = process.env.NEXT_PUBLIC_DEMO_STUDENT_PASSWORD || "1234";
+const DEMO_TEACHER_LOGIN = process.env.NEXT_PUBLIC_DEMO_TEACHER_LOGIN || "teacher@123";
+const DEMO_TEACHER_PASSWORD = process.env.NEXT_PUBLIC_DEMO_TEACHER_PASSWORD || "teacher@123";
+
 export default function LoginPage() {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
   const [role, setRole] = useState<Role>("student");
-  const [rollNo, setRollNo] = useState("24");
-  const [schoolCode, setSchoolCode] = useState("DEMO01");
-  const [pin, setPin] = useState("1234");
+  const [rollNo, setRollNo] = useState("");
+  const [schoolCode, setSchoolCode] = useState("");
+  const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
-  async function handleDemoTeacherLogin() {
-    setErrorMessage("");
-    setLoading(true);
-    setRole("teacher");
-    setEmail("teacher@123");
-    setPassword("teacher@123");
-
-    try {
-      await api.auth.login("teacher@123", "teacher@123");
-      router.push("/teacher/dashboard");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to log in with demo teacher account.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDemoStudentLogin() {
-    setErrorMessage("");
-    setLoading(true);
-    setRole("student");
-    setRollNo("24");
-    setPin("1234");
-    setSchoolCode("DEMO01");
-
-    try {
-      await api.auth.studentLogin("24", "1234", "DEMO01");
-      router.push("/student/dashboard");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to log in with demo student account.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,6 +55,32 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Invalid credentials. Please verify with your school.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDemoLogin(demoRole: Role) {
+    setErrorMessage("");
+    setLoading(true);
+
+    try {
+      if (demoRole === "student") {
+        setRole("student");
+        setSchoolCode(DEMO_SCHOOL_CODE);
+        setRollNo(DEMO_STUDENT_ROLL_NUMBER);
+        setPin(DEMO_STUDENT_PASSWORD);
+        await api.auth.studentLogin(DEMO_STUDENT_ROLL_NUMBER, DEMO_STUDENT_PASSWORD, DEMO_SCHOOL_CODE);
+        router.push("/student/dashboard");
+      } else {
+        setRole("teacher");
+        setEmail(DEMO_TEACHER_LOGIN);
+        setPassword(DEMO_TEACHER_PASSWORD);
+        await api.auth.login(DEMO_TEACHER_LOGIN, DEMO_TEACHER_PASSWORD);
+        router.push("/teacher/dashboard");
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Demo login is unavailable. Please check backend demo settings.");
     } finally {
       setLoading(false);
     }
@@ -225,7 +222,7 @@ export default function LoginPage() {
                     type="text"
                     value={schoolCode}
                     onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
-                    placeholder="DEMO01"
+                    placeholder="School code"
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none focus:border-emerald font-medium text-ink bg-white font-mono uppercase"
                     required
                   />
@@ -239,7 +236,7 @@ export default function LoginPage() {
                     type="text"
                     value={rollNo}
                     onChange={(e) => setRollNo(e.target.value)}
-                    placeholder="24"
+                    placeholder="Roll number"
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none focus:border-emerald font-medium text-ink bg-white font-mono"
                     required
                   />
@@ -269,7 +266,7 @@ export default function LoginPage() {
                     type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="teacher@123"
+                    placeholder="teacher@example.org"
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded outline-none focus:border-emerald font-medium text-ink bg-white"
                     required
                   />
@@ -291,7 +288,7 @@ export default function LoginPage() {
               </>
             )}
 
-            <div className="pt-2 space-y-2">
+            <div className="pt-2">
               <Button type="submit" variant="primary" size="md" className="w-full text-xs" disabled={loading}>
                 {loading
                   ? t("login_verifying")
@@ -299,67 +296,32 @@ export default function LoginPage() {
                   ? t("login_btn_student")
                   : t("login_btn_teacher")}
               </Button>
-
-              {role === "student" ? (
-                <button
-                  type="button"
-                  onClick={handleDemoStudentLogin}
-                  disabled={loading}
-                  className="w-full py-2 px-3 border border-emerald/30 bg-emerald/10 hover:bg-emerald/20 text-emerald-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald" />
-                  <span>{t("demo_student_btn")}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleDemoTeacherLogin}
-                  disabled={loading}
-                  className="w-full py-2 px-3 border border-emerald/30 bg-emerald/10 hover:bg-emerald/20 text-emerald-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald" />
-                  <span>{t("demo_teacher_btn")}</span>
-                </button>
-              )}
             </div>
           </form>
 
-          {/* Quick Demo Credentials Footer */}
-          <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-500 text-center space-y-1">
-            {role === "student" ? (
-              <p>
-                {t("login_dev_demo")}:{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRollNo("24");
-                    setPin("1234");
-                    setSchoolCode("DEMO01");
-                    setErrorMessage("");
-                  }}
-                  className="text-emerald hover:underline font-semibold cursor-pointer"
-                  title="Click to fill Roll: 24 / PIN: 1234"
-                >
-                  Roll 24 / PIN 1234 ({t("login_click_to_fill")})
-                </button>
-              </p>
-            ) : (
-              <p>
-                {t("login_dev_demo")}:{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail("teacher@123");
-                    setPassword("teacher@123");
-                    setErrorMessage("");
-                  }}
-                  className="text-emerald hover:underline font-semibold cursor-pointer"
-                  title="Click to fill teacher@123"
-                >
-                  teacher@123 / teacher@123 ({t("login_click_to_fill")})
-                </button>
-              </p>
-            )}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="text-[11px]"
+              disabled={loading}
+              onClick={() => handleDemoLogin("student")}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              Demo Student
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="text-[11px]"
+              disabled={loading}
+              onClick={() => handleDemoLogin("teacher")}
+            >
+              <UserRound className="w-3.5 h-3.5" />
+              Demo Teacher
+            </Button>
           </div>
         </div>
       </div>
