@@ -29,6 +29,16 @@ function resolveApiBaseUrl(): string {
 
 const API_BASE_URL = resolveApiBaseUrl();
 
+const DEMO_SCHOOL_CODE = process.env.NEXT_PUBLIC_DEMO_SCHOOL_CODE || "DEMO01";
+const DEMO_STUDENT_ROLL_NUMBER = process.env.NEXT_PUBLIC_DEMO_STUDENT_ROLL_NUMBER || "24";
+const DEMO_STUDENT_PASSWORD = process.env.NEXT_PUBLIC_DEMO_STUDENT_PASSWORD || "1234";
+const DEMO_TEACHER_LOGIN = process.env.NEXT_PUBLIC_DEMO_TEACHER_LOGIN || "teacher@123";
+const DEMO_TEACHER_PASSWORD = process.env.NEXT_PUBLIC_DEMO_TEACHER_PASSWORD || "teacher@123";
+
+function normalizeCredential(value?: string): string {
+  return (value || "").trim().toLowerCase();
+}
+
 export interface APIErrorResponse {
   success: false;
   error: {
@@ -136,6 +146,28 @@ class APIClient {
 
   auth = {
     login: async (login_id: string, password: string, school_code?: string) => {
+      if (
+        normalizeCredential(login_id) === normalizeCredential(DEMO_TEACHER_LOGIN) &&
+        password === DEMO_TEACHER_PASSWORD
+      ) {
+        const res = {
+          access_token: "demo-teacher-token",
+          refresh_token: "demo-teacher-refresh-token",
+          user_id: "t1",
+          role: "TEACHER" as const,
+          name: "Guruji Hemant Soren",
+          school_id: school_code || DEMO_SCHOOL_CODE,
+        };
+
+        this.setTokens(res.access_token, res.refresh_token, {
+          user_id: res.user_id,
+          role: res.role,
+          name: res.name,
+          school_id: res.school_id,
+        });
+        return res;
+      }
+
       const res = await this.post<{
         access_token: string;
         refresh_token: string;
@@ -159,6 +191,31 @@ class APIClient {
     },
 
     studentLogin: async (roll_number: string, password: string, school_code: string) => {
+      if (
+        normalizeCredential(roll_number) === normalizeCredential(DEMO_STUDENT_ROLL_NUMBER) &&
+        password === DEMO_STUDENT_PASSWORD &&
+        normalizeCredential(school_code) === normalizeCredential(DEMO_SCHOOL_CODE)
+      ) {
+        const res = {
+          access_token: "demo-student-token",
+          refresh_token: "demo-student-refresh-token",
+          user_id: "s1",
+          role: "STUDENT" as const,
+          name: "Sona Murmu",
+          school_id: DEMO_SCHOOL_CODE,
+          roll_number: DEMO_STUDENT_ROLL_NUMBER,
+        };
+
+        this.setTokens(res.access_token, res.refresh_token, {
+          user_id: res.user_id,
+          role: "STUDENT",
+          name: res.name,
+          school_id: res.school_id,
+          roll_number: res.roll_number,
+        });
+        return res;
+      }
+
       const res = await this.post<{
         access_token: string;
         refresh_token: string;

@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 
 const API_PREFIX = "/api/v1";
+const DEMO_SCHOOL_CODE = process.env.NEXT_PUBLIC_DEMO_SCHOOL_CODE || "DEMO01";
+const DEMO_STUDENT_ROLL_NUMBER = process.env.NEXT_PUBLIC_DEMO_STUDENT_ROLL_NUMBER || "24";
+const DEMO_STUDENT_PASSWORD = process.env.NEXT_PUBLIC_DEMO_STUDENT_PASSWORD || "1234";
+const DEMO_TEACHER_LOGIN = process.env.NEXT_PUBLIC_DEMO_TEACHER_LOGIN || "teacher@123";
+const DEMO_TEACHER_PASSWORD = process.env.NEXT_PUBLIC_DEMO_TEACHER_PASSWORD || "teacher@123";
+
+function normalizeCredential(value?: string): string {
+  return (value || "").trim().toLowerCase();
+}
 
 function resolveBackendBaseUrl(): string | null {
   const configured = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "";
@@ -12,6 +21,76 @@ function resolveBackendBaseUrl(): string | null {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const role = body.role;
+    const isStudent = role === "student";
+
+    if (isStudent) {
+      const rollNumber = (body.rollNo || body.roll || body.roll_number || "").toString();
+      const password = (body.pin || body.password || "").toString();
+      const schoolCode = (body.schoolCode || body.school_code || "").toString();
+
+      if (
+        normalizeCredential(rollNumber) === normalizeCredential(DEMO_STUDENT_ROLL_NUMBER) &&
+        password === DEMO_STUDENT_PASSWORD &&
+        normalizeCredential(schoolCode) === normalizeCredential(DEMO_SCHOOL_CODE)
+      ) {
+        const response = NextResponse.json({
+          success: true,
+          data: {
+            access_token: "demo-student-token",
+            refresh_token: "demo-student-refresh-token",
+            user_id: "s1",
+            role: "STUDENT",
+            name: "Sona Murmu",
+            school_id: DEMO_SCHOOL_CODE,
+            roll_number: DEMO_STUDENT_ROLL_NUMBER,
+          },
+        });
+        response.cookies.set("aaroh_user_id", "s1", {
+          path: "/",
+          httpOnly: false,
+          maxAge: 60 * 60 * 24 * 7,
+        });
+        response.cookies.set("aaroh_user_role", "student", {
+          path: "/",
+          httpOnly: false,
+          maxAge: 60 * 60 * 24 * 7,
+        });
+        return response;
+      }
+    } else {
+      const loginId = (body.email || body.login_id || "").toString();
+      const password = (body.password || "").toString();
+
+      if (
+        normalizeCredential(loginId) === normalizeCredential(DEMO_TEACHER_LOGIN) &&
+        password === DEMO_TEACHER_PASSWORD
+      ) {
+        const response = NextResponse.json({
+          success: true,
+          data: {
+            access_token: "demo-teacher-token",
+            refresh_token: "demo-teacher-refresh-token",
+            user_id: "t1",
+            role: "TEACHER",
+            name: "Guruji Hemant Soren",
+            school_id: body.schoolCode || body.school_code || DEMO_SCHOOL_CODE,
+          },
+        });
+        response.cookies.set("aaroh_user_id", "t1", {
+          path: "/",
+          httpOnly: false,
+          maxAge: 60 * 60 * 24 * 7,
+        });
+        response.cookies.set("aaroh_user_role", "teacher", {
+          path: "/",
+          httpOnly: false,
+          maxAge: 60 * 60 * 24 * 7,
+        });
+        return response;
+      }
+    }
+
     const backendBaseUrl = resolveBackendBaseUrl();
 
     if (!backendBaseUrl) {
@@ -21,8 +100,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const role = body.role;
-    const isStudent = role === "student";
     const endpoint = isStudent ? "/auth/student-login" : "/auth/login";
     const payload = isStudent
       ? {
